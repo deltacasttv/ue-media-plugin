@@ -1,0 +1,81 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0.0",
+	"FriendlyName": "Deltacast Media Player",
+	"Description": "Implements input and output using Deltacast cards.",
+	"Category": "Media Players",
+	"CreatedBy": "Deltacast",
+	"CreatedByURL": "https://www.deltacast.tv",
+	"DocsURL": "https://www.deltacast.tv/media/30892/deltacast-media-plugin-documentation.pdf",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/8f1fe61fd1ea4ac5ac3cef0906402598",
+	"SupportURL": "https://www.deltacast.tv/support/contact-support",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"EngineVersion": "5.2",
+	"SupportedTargetPlatforms": [ "Win64", "Linux" ],
+	"Modules": [
+		{
+			"Name": "DeltacastMedia",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "DeltacastMediaSource",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "DeltacastMediaSourceFactory",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "DeltacastMediaSourceFactory",
+			"Type": "RuntimeNoCommandlet",
+			"LoadingPhase": "PostEngineInit",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "DeltacastMediaOutput",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "DeltacastMediaEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "MediaFrameworkUtilities",
+			"Enabled": true
+		}
+	]
+}
