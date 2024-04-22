@@ -30,6 +30,7 @@
 #include "MediaIOCoreEncodeTime.h"
 #include "MediaIOCoreFileWriter.h"
 #include "MediaIOCoreSamples.h"
+#include "MediaIOCorePlayerBase.h"
 
 
 #define LOCTEXT_NAMESPACE "FDeltacastMediaPlayer"
@@ -361,10 +362,10 @@ bool FDeltacastMediaPlayer::OnInputFrameReceived(const FDeltacastVideoFrameData&
 		DecodedTimecodeF2 = DecodedTimecode;
 		++DecodedTimecodeF2->Frames;
 
-		if (bUseTimeSynchronization)
+		if (EvaluationType == EMediaIOSampleEvaluationType::Timecode)
 		{
-			const FFrameNumber ConvertedFrameNumber = DecodedTimecode.GetValue().ToFrameNumber(VideoFrameRate);
-			const double       NumberOfSeconds      = ConvertedFrameNumber.Value * VideoFrameRate.AsInterval();
+		    const FFrameNumber ConvertedFrameNumber = DecodedTimecode.GetValue().ToFrameNumber(VideoFrameRate);
+	 	    const double       NumberOfSeconds      = ConvertedFrameNumber.Value * VideoFrameRate.AsInterval();
 			const FTimespan    TimecodeDecodedTime  = FTimespan::FromSeconds(NumberOfSeconds);
 
 			DecodedTime   = TimecodeDecodedTime;
@@ -526,6 +527,11 @@ void FDeltacastMediaPlayer::VerifyFrameDropCount()
 		        TEXT("Lost %d video frames on input %s. Frame rate is either too slow or buffering capacity is too small."),
 		        DeltaVideoDropCount, *GetUrl());
 	}
+}
+
+TSharedPtr<FMediaIOCoreTextureSampleBase> FDeltacastMediaPlayer::AcquireTextureSample_AnyThread() const
+{
+	return TextureSamplePool->AcquireShared();
 }
 
 #undef LOCTEXT_NAMESPACE

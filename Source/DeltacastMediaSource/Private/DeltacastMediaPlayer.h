@@ -55,6 +55,7 @@ public: //~ IDeltacastInputStreamCallback
 protected: //~ FMediaIOCorePlayerBase
 	virtual bool IsHardwareReady() const override;
 	virtual void SetupSampleChannels() override;
+	virtual TSharedPtr<FMediaIOCoreTextureSampleBase> AcquireTextureSample_AnyThread() const override;
 
 private:
 	void VerifyFrameDropCount();
