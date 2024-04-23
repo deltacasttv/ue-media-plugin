@@ -77,6 +77,8 @@ namespace Deltacast::Helpers
 
 	[[nodiscard]] DELTACASTMEDIA_API VHD::ULONG GetPortIndex(VHD_STREAMTYPE StreamType);
 
+	[[nodiscard]] DELTACASTMEDIA_API VHD_CORE_BOARDPROPERTY GetFWLoopbackFromPortIndex(const int32 PortIndex);
+
 	[[nodiscard]] DELTACASTMEDIA_API VHD_CORE_BOARDPROPERTY GetByPassFromPortIndex(int32 PortIndex);
 
 	[[nodiscard]] DELTACASTMEDIA_API VHD_CORE_BOARDPROPERTY GetChannelStatusFromPortIndex(bool bIsInput, int32 PortIndex);

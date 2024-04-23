@@ -607,9 +607,31 @@ std::optional<bool> FDeltacastSdk::IsFieldMergingSupported(const VHDHandle Board
 
 void FDeltacastSdk::SetByPassRelay(const VHDHandle BoardHandle, const VHD::ULONG PortIndex, const VHD::ULONG LinkCount, const int Value)
 {
+	VHD::ULONG has_passive_loopback;
+	VHD::ULONG has_active_loopback;
+	VHD::ULONG has_firmware_loopback;
+
 	check(BoardHandle != VHD::InvalidHandle);
-	check(LinkCount == 1 || LinkCount == 4);
 	check(Value == VHD::True || Value == VHD::False);
+
+	[[maybe_unused]] const auto GetCapPassiveLoopbackRes = GetBoardCapability(BoardHandle, VHD_CORE_BOARD_CAPABILITY::VHD_CORE_BOARD_CAP_PASSIVE_LOOPBACK, &has_passive_loopback);
+	[[maybe_unused]] const auto GetCapActiveLoopbackRes = GetBoardCapability(BoardHandle, VHD_CORE_BOARD_CAPABILITY::VHD_CORE_BOARD_CAP_ACTIVE_LOOPBACK, &has_active_loopback);
+	[[maybe_unused]] const auto GetCapFirmwareLoopbackRes = GetBoardCapability(BoardHandle, VHD_CORE_BOARD_CAPABILITY::VHD_CORE_BOARD_CAP_FIRMWARE_LOOPBACK, &has_firmware_loopback);
+
+	if ((VHD::Bool)has_firmware_loopback)
+	{
+		auto fwloopback = Deltacast::Helpers::GetFWLoopbackFromPortIndex(PortIndex);
+		if (fwloopback != VHD_CORE_BOARDPROPERTY::NB_VHD_CORE_BOARDPROPERTIES)
+			[[maybe_unused]] const auto SetFWLoopbackStateResult = SetBoardProperty(BoardHandle, fwloopback, Value);
+	}
+
+	if ((VHD::Bool)has_active_loopback && PortIndex == 0)
+		[[maybe_unused]] const auto SetActiveLoopbackStateResult = SetBoardProperty(
+			BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_ACTIVE_LOOPBACK_0, Value
+		);
+
+	check(has_passive_loopback > 0);
+	check(LinkCount == 1 || LinkCount == 4);
 
 	 if (PortIndex != 0 || LinkCount != 4)
 	 {

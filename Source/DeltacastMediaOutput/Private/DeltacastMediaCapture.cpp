@@ -155,10 +155,7 @@ void UDeltacastMediaCapture::StopCaptureImpl(const bool bAllowPendingFrameToBePr
 				const int32 DeviceModeIdentifier = DeltacastMediaSource->OutputConfiguration.MediaConfiguration.MediaMode.DeviceModeIdentifier;
 				const auto bIsSdiMode = Deltacast::Helpers::IsDeviceModeIdentifierSdi(DeviceModeIdentifier);
 
-				if (bIsSdiMode)
-				{
-					DeltacastSdk.SetByPassRelay(BoardHandle, PortIndex, LinkCount, VHD::True);
-				}
+				DeltacastSdk.SetByPassRelay(BoardHandle, PortIndex, LinkCount, VHD::True);
 
 				[[maybe_unused]] const auto CloseBoardHandleResult = DeltacastSdk.CloseBoardHandle(BoardHandle);
 				BoardHandle                                        = VHD::InvalidHandle;
@@ -403,10 +400,7 @@ bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutp
 	// Clean up because StopCapture() is not called on error during initialization
 	const auto BoardCleanUp = [&DeltacastSdk, bIsSdiMode, PortIndex, LinkCount, this]()
 	{
-		if (bIsSdiMode)
-		{
-			DeltacastSdk.SetByPassRelay(BoardHandle, PortIndex, LinkCount, VHD::True);
-		}
+		DeltacastSdk.SetByPassRelay(BoardHandle, PortIndex, LinkCount, VHD::True);
 
 		[[maybe_unused]] const auto Result = DeltacastSdk.CloseBoardHandle(BoardHandle);
 		BoardHandle                        = VHD::InvalidHandle;
@@ -427,9 +421,10 @@ bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutp
 
 	const auto StreamType = Deltacast::Helpers::GetStreamTypeFromPortIndex(false, PortIndex);
 
+	DeltacastSdk.SetByPassRelay(BoardHandle, PortIndex, LinkCount, VHD::False);
+
 	if (bIsSdiMode)
 	{
-		DeltacastSdk.SetByPassRelay(BoardHandle, PortIndex, LinkCount, VHD::False);
 	
 		const auto ClockDivisor = bIsEuropeanClock ? VHD_CLOCKDIVISOR::VHD_CLOCKDIV_1 : VHD_CLOCKDIVISOR::VHD_CLOCKDIV_1001;
 

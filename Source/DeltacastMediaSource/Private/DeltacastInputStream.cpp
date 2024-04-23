@@ -77,10 +77,7 @@ bool FDeltacastInputStream::Init()
 		DeltacastSdk.SetBoardProperty(BoardHandle, ChannelMode, static_cast<VHD::ULONG>(VHD_CHANNEL_MODE::VHD_CHANNEL_MODE_SDI));
 	}
 
-	if (bIsSdi)
-	{
-		DeltacastSdk.SetByPassRelay(BoardHandle, BaseConfig.PortIndex, SdiPortConfig.IsSingleLink() ? 1 : 4, VHD::False);
-	}
+	DeltacastSdk.SetByPassRelay(BoardHandle, BaseConfig.PortIndex, (bIsDv || SdiPortConfig.IsSingleLink()) ? 1 : 4, VHD::False);
 
 	const auto StreamType = Deltacast::Helpers::GetStreamTypeFromPortIndex(BaseConfig.bIsInput, BaseConfig.PortIndex);
 
@@ -340,10 +337,7 @@ void FDeltacastInputStream::Exit()
 
 		StreamHandle = VHD::InvalidHandle;
 
-		if (bIsSdi)
-		{
-			DeltacastSdk.SetByPassRelay(BoardHandle, BasePortConfig().PortIndex, SdiPortConfig.IsSingleLink() ? 1 : 4, VHD::True);
-		}
+		DeltacastSdk.SetByPassRelay(BoardHandle, BasePortConfig().PortIndex, (!bIsSdi || SdiPortConfig.IsSingleLink()) ? 1 : 4, VHD::True);
 
 		[[maybe_unused]] const auto CloseBoardHandleResult = DeltacastSdk.CloseBoardHandle(BoardHandle);
 		BoardHandle = VHD::InvalidHandle;
