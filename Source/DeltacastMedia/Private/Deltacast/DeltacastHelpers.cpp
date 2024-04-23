@@ -138,6 +138,19 @@ namespace Deltacast::Helpers
 		}
 	}
 
+	VHD_CORE_BOARDPROPERTY GetFWLoopbackFromPortIndex(const int32 PortIndex)
+	{
+		switch (PortIndex)
+		{
+		case 0:
+			return VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_FIRMWARE_LOOPBACK_0;
+		case 1:
+			return VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_FIRMWARE_LOOPBACK_1;
+		default:
+			return VHD_CORE_BOARDPROPERTY::NB_VHD_CORE_BOARDPROPERTIES;
+		}
+	}
+
 	VHD_CORE_BOARDPROPERTY GetByPassFromPortIndex(const int32 PortIndex)
 	{
 		switch (PortIndex)
