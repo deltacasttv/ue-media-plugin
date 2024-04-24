@@ -605,14 +605,14 @@ std::optional<bool> FDeltacastSdk::IsFieldMergingSupported(const VHDHandle Board
 
 
 
-void FDeltacastSdk::SetByPassRelay(const VHDHandle BoardHandle, const VHD::ULONG PortIndex, const VHD::ULONG LinkCount, const int Value)
+void FDeltacastSdk::SetLoopbackState(const VHDHandle BoardHandle, const VHD::ULONG PortIndex, const VHD::ULONG LinkCount, const int State)
 {
 	VHD::ULONG has_passive_loopback;
 	VHD::ULONG has_active_loopback;
 	VHD::ULONG has_firmware_loopback;
 
 	check(BoardHandle != VHD::InvalidHandle);
-	check(Value == VHD::True || Value == VHD::False);
+	check(State == VHD::True || State == VHD::False);
 
 	[[maybe_unused]] const auto GetCapPassiveLoopbackRes = GetBoardCapability(BoardHandle, VHD_CORE_BOARD_CAPABILITY::VHD_CORE_BOARD_CAP_PASSIVE_LOOPBACK, &has_passive_loopback);
 	[[maybe_unused]] const auto GetCapActiveLoopbackRes = GetBoardCapability(BoardHandle, VHD_CORE_BOARD_CAPABILITY::VHD_CORE_BOARD_CAP_ACTIVE_LOOPBACK, &has_active_loopback);
@@ -622,33 +622,32 @@ void FDeltacastSdk::SetByPassRelay(const VHDHandle BoardHandle, const VHD::ULONG
 	{
 		auto fwloopback = Deltacast::Helpers::GetFWLoopbackFromPortIndex(PortIndex);
 		if (fwloopback != VHD_CORE_BOARDPROPERTY::NB_VHD_CORE_BOARDPROPERTIES)
-			[[maybe_unused]] const auto SetFWLoopbackStateResult = SetBoardProperty(BoardHandle, fwloopback, Value);
+			[[maybe_unused]] const auto SetFWLoopbackStateResult = SetBoardProperty(BoardHandle, fwloopback, State);
 	}
 
 	if ((VHD::Bool)has_active_loopback && PortIndex == 0)
 		[[maybe_unused]] const auto SetActiveLoopbackStateResult = SetBoardProperty(
-			BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_ACTIVE_LOOPBACK_0, Value
+			BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_ACTIVE_LOOPBACK_0, State
 		);
 
-	check(has_passive_loopback > 0);
 	check(LinkCount == 1 || LinkCount == 4);
 
-	 if (PortIndex != 0 || LinkCount != 4)
-	 {
-		 const auto ByPassRelay = Deltacast::Helpers::GetByPassFromPortIndex(PortIndex);
-
-		 if (ByPassRelay != VHD_CORE_BOARDPROPERTY::NB_VHD_CORE_BOARDPROPERTIES)
-		 {
-			 [[maybe_unused]] const auto SetByPassResult = SetBoardProperty(BoardHandle, ByPassRelay, Value);
-		 }
-	 }
-	 else
-	 {
-		 [[maybe_unused]] const auto SetByPass0Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_0, Value);
-		 [[maybe_unused]] const auto SetByPass1Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_1, Value);
-		 [[maybe_unused]] const auto SetByPass2Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_2, Value);
-		 [[maybe_unused]] const auto SetByPass3Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_3, Value);
-	 }
+	if (has_passive_loopback)
+	{
+		if (PortIndex != 0 || LinkCount != 4)
+		{
+			const auto ByPassRelay = Deltacast::Helpers::GetByPassFromPortIndex(PortIndex);
+			if (ByPassRelay != VHD_CORE_BOARDPROPERTY::NB_VHD_CORE_BOARDPROPERTIES)
+				[[maybe_unused]] const auto SetByPassResult = SetBoardProperty(BoardHandle, ByPassRelay, State);
+		}
+		else
+		{
+			[[maybe_unused]] const auto SetByPass0Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_0, State);
+			[[maybe_unused]] const auto SetByPass1Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_1, State);
+			[[maybe_unused]] const auto SetByPass2Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_2, State);
+			[[maybe_unused]] const auto SetByPass3Result = SetBoardProperty(BoardHandle, VHD_CORE_BOARDPROPERTY::VHD_CORE_BP_BYPASS_RELAY_3, State);
+		}
+	}
 }
 
 
