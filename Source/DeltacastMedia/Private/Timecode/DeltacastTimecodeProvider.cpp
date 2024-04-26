@@ -175,8 +175,9 @@ ETickableTickType UDeltacastTimecodeProvider::GetTickableTickType() const
 {
 #if WITH_EDITORONLY_DATA && WITH_EDITOR
 	return ETickableTickType::Conditional;
-#endif
+#else
 	return ETickableTickType::Never;
+#endif
 }
 
 bool UDeltacastTimecodeProvider::IsTickable() const
