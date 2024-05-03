@@ -31,6 +31,7 @@ Typical applications of UE with DELTACAST cards :
 - DELTA-12G-elp-h 1c, 2c, 20, 40, 04, 4c, 2i1c
 - DELTA-12G2c-asi8c-elp-h
 - DELTA-12G1c-hmi10-elp
+- DELTA-12G11-HMI11-e-Key
 - DELTA-12G-elp-key 11
 - DELTA-h4k2-elp 20
 - DELTA-3G-elp-d 4c, 8c, 8b, 84, 80
