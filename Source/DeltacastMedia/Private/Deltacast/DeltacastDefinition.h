@@ -142,6 +142,9 @@ enum class VHD_CORE_BOARDPROPERTY : uint32
 	VHD_CORE_BP_BYPASS_RELAY_3 = 16777266,
 
 	VHD_CORE_BOARD_CAP_LTC_ONBOARD = 16777238,
+	VHD_CORE_BP_FIRMWARE_LOOPBACK_0 = 16777329,
+	VHD_CORE_BP_FIRMWARE_LOOPBACK_1 = 16777334,
+	VHD_CORE_BP_ACTIVE_LOOPBACK_0 = 16777330,
 
 	NB_VHD_CORE_BOARDPROPERTIES = 16777327,
 };
@@ -149,6 +152,9 @@ enum class VHD_CORE_BOARDPROPERTY : uint32
 enum class VHD_CORE_BOARD_CAPABILITY : uint32
 {
 	VHD_CORE_BOARD_CAP_FIELD_MERGING = 16777232, /*! Return true if the board supports field merging handling feature */
+	VHD_CORE_BOARD_CAP_PASSIVE_LOOPBACK = 16777223, /*! Return true if the board supports passive loopback feature */
+	VHD_CORE_BOARD_CAP_ACTIVE_LOOPBACK = 16777235, /*! Return true if the board supports active loopback feature */
+	VHD_CORE_BOARD_CAP_FIRMWARE_LOOPBACK = 16777252, /*! Returns the number of available Firmware loopback */
 };
 
 enum class VHD_BOARDTYPE : uint32

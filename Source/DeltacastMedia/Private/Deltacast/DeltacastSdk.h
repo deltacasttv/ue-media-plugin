@@ -114,7 +114,8 @@ public: // Utils for detection
 	[[nodiscard]] FORCEINLINE std::optional<VHD::ULONG> GetStreamProperty(VHDHandle StreamHandle, VHD_CORE_STREAMPROPERTY Property) const;
 
 public: // Utils for modification
-	void SetByPassRelay(VHDHandle BoardHandle, VHD::ULONG PortIndex, VHD::ULONG LinkCount, int Value);
+	// VHD:True = Loopback enabled, VHD:False = Loopback disabled
+	void SetLoopbackState(VHDHandle BoardHandle, VHD::ULONG PortIndex, VHD::ULONG LinkCount, int State);
 
 
 protected: //~ Deltacast::DynamicLibrary::DynamicLibraryLoader
