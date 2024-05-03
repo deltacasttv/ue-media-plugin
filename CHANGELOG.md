@@ -1,5 +1,13 @@
 # Change log
 
+## [1.1.0]
+03/05/2024
+
+### Added
+- Loopback feature support
+- Card support:
+	- DELTA-12G11-HMI11-e-Key 	
+
 ## [1.0.0]
 15/06/2023
 
