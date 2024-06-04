@@ -39,3 +39,6 @@ Typical applications of UE with DELTACAST cards :
 - FLEX-12g 10, 01
 - FLEX-hmi 10, 01
 - FLEX-dp 10, 01
+
+## Tutorial
+[![Watch the video](https://img.youtube.com/vi/Z2TiHyWY48g/maxresdefault.jpg)](https://youtu.be/Z2TiHyWY48g)
