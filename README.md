@@ -28,6 +28,7 @@ Typical applications of UE with DELTACAST cards :
 - Windows and Linux
 
 ## Compatible DELTACAST Video Cards
+- DELTA-hmi-e-40
 - DELTA-12G-elp-h 1c, 2c, 20, 40, 04, 4c, 2i1c
 - DELTA-12G2c-asi8c-elp-h
 - DELTA-12G1c-hmi10-elp

@@ -1,6 +1,12 @@
 # Change log
 
 ## [1.1.0]
+
+### Added
+
+- DELTA hmi-e-40 support [issue #10 PR #11]
+
+## [1.1.0]
 03/05/2024
 
 ### Added

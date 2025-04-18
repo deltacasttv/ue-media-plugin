@@ -565,17 +565,21 @@ enum class VHD_COMPANION_CARD_TYPE : uint32
 
 enum class VHD_CHANNELTYPE : uint32
 {
-	VHD_CHNTYPE_DISABLE = 0,     /*! Channel not present in the board layout */
-	VHD_CHNTYPE_HDSDI = 2,       /*! HD-SDI channel */
-	VHD_CHNTYPE_3GSDI = 3,       /*! 3G-SDI channel */
-	VHD_CHNTYPE_DVI = 4,         /*! DVI channel */
-	VHD_CHNTYPE_ASI = 5,         /*! ASI channel */
-	VHD_CHNTYPE_HDMI = 6,        /*! HDMI channel */
-	VHD_CHNTYPE_DISPLAYPORT = 7, /*! Display port channel */
-	VHD_CHNTYPE_12GSDI = 8,      /*! 12G-SDI channel */
-	VHD_CHNTYPE_3GSDI_ASI = 10,  /*! 3G-SDI/ASI channel */
-	VHD_CHNTYPE_12GSDI_ASI = 11, /*! 12G-SDI/ASI channel */
-	NB_VHD_CHANNELTYPE = 12
+	VHD_CHNTYPE_DISABLE = 0,        /*! Channel not present in the board layout */
+	VHD_CHNTYPE_HDSDI = 2,          /*! HD-SDI channel */
+	VHD_CHNTYPE_3GSDI = 3,          /*! 3G-SDI channel */
+	VHD_CHNTYPE_DVI = 4,            /*! DVI channel */
+	VHD_CHNTYPE_ASI = 5,            /*! ASI channel */
+	VHD_CHNTYPE_HDMI_TMDS = 6,      /*! HDMI TMDS channel */
+	VHD_CHNTYPE_DISPLAYPORT = 7,    /*! Display port channel */
+	VHD_CHNTYPE_12GSDI = 8,         /*! 12G-SDI channel */
+	VHD_CHNTYPE_3GSDI_ASI = 10,     /*! 3G-SDI/ASI channel */
+	VHD_CHNTYPE_12GSDI_ASI = 11,    /*! 12G-SDI/ASI channel */
+	VHD_CHNTYPE_HDMI_FRL3 = 12,		/*! HDMI FRL 3 channel */
+	VHD_CHNTYPE_HDMI_FRL4 = 13,		/*! HDMI FRL 4 channel */
+	VHD_CHNTYPE_HDMI_FRL5 = 14,		/*! HDMI FRL 5 channel */
+	VHD_CHNTYPE_HDMI_FRL6 = 15,		/*! HDMI FRL 6 channel */
+	NB_VHD_CHANNELTYPE = 16
 };
 
 enum class VHD_CHANNEL_MODE :uint32

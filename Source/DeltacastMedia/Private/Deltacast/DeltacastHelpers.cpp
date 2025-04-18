@@ -632,7 +632,11 @@ namespace Deltacast::Helpers
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_ASI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DVI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DISPLAYPORT: [[fallthrough]];
-			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_TMDS: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL3: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL4: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL5: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL6: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DISABLE: [[fallthrough]];
 			case VHD_CHANNELTYPE::NB_VHD_CHANNELTYPE:
 				return false;
@@ -648,7 +652,11 @@ namespace Deltacast::Helpers
 		{
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DVI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DISPLAYPORT: [[fallthrough]];
-			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI:
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_TMDS: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL3: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL4: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL5: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL6:
 				return true;
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_ASI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDSDI: [[fallthrough]];
@@ -675,7 +683,11 @@ namespace Deltacast::Helpers
 				return true;
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DVI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_DISPLAYPORT: [[fallthrough]];
-			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_TMDS: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL3: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL4: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL5: [[fallthrough]];
+			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDMI_FRL6: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_HDSDI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_3GSDI: [[fallthrough]];
 			case VHD_CHANNELTYPE::VHD_CHNTYPE_12GSDI: [[fallthrough]];
