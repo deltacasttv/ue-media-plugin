@@ -37,13 +37,13 @@ namespace VHD
 	inline static constexpr VHDHandle InvalidHandle = nullptr;
 
 	inline static constexpr VHD::Bool False = 0;
-	inline static constexpr VHD::Bool True  = 1;
+	inline static constexpr VHD::Bool True = 1;
 
 	inline static constexpr auto MaxPortCount = 12;
 
 	inline static constexpr auto VHD_CORE_RXSTS_UNLOCKED = 0x2;
 
-	inline static constexpr auto VHD_SDI_GNLKSTS_NOREF    = 0x1;
+	inline static constexpr auto VHD_SDI_GNLKSTS_NOREF = 0x1;
 	inline static constexpr auto VHD_SDI_GNLKSTS_UNLOCKED = 0x2;
 }
 
@@ -175,7 +175,7 @@ enum class VHD_BOARDTYPE : uint32
 enum class VHD_SDI_BOARDPROPERTY : uint32
 {
 	VHD_SDI_BP_CLOCK_SYSTEM = 33554436,
-	
+
 	VHD_SDI_BP_GENLOCK_SOURCE = 33554437,
 	VHD_SDI_BP_GENLOCK_STATUS = 33554439,
 	VHD_SDI_BP_GENLOCK_VIDEO_STANDARD = 33554440,
@@ -548,7 +548,7 @@ struct VHD_TIMECODE
 							  * Bit 3: Binary group flag BGF0
 							  * Bit 4: Binary group flag BGF1
 							  * Bit 5: Binary group flag BGF2
-						      */
+							  */
 	VHD::BYTE  pDBB[2];      /*! Timecode distributed binary bit groups component (ATC only) */
 };
 
@@ -565,20 +565,20 @@ enum class VHD_COMPANION_CARD_TYPE : uint32
 
 enum class VHD_CHANNELTYPE : uint32
 {
-	VHD_CHNTYPE_DISABLE = 0,        /*! Channel not present in the board layout */
-	VHD_CHNTYPE_HDSDI = 2,          /*! HD-SDI channel */
-	VHD_CHNTYPE_3GSDI = 3,          /*! 3G-SDI channel */
-	VHD_CHNTYPE_DVI = 4,            /*! DVI channel */
-	VHD_CHNTYPE_ASI = 5,            /*! ASI channel */
-	VHD_CHNTYPE_HDMI_TMDS = 6,      /*! HDMI TMDS channel */
-	VHD_CHNTYPE_DISPLAYPORT = 7,    /*! Display port channel */
-	VHD_CHNTYPE_12GSDI = 8,         /*! 12G-SDI channel */
-	VHD_CHNTYPE_3GSDI_ASI = 10,     /*! 3G-SDI/ASI channel */
-	VHD_CHNTYPE_12GSDI_ASI = 11,    /*! 12G-SDI/ASI channel */
-	VHD_CHNTYPE_HDMI_FRL3 = 12,		/*! HDMI FRL 3 channel */
-	VHD_CHNTYPE_HDMI_FRL4 = 13,		/*! HDMI FRL 4 channel */
-	VHD_CHNTYPE_HDMI_FRL5 = 14,		/*! HDMI FRL 5 channel */
-	VHD_CHNTYPE_HDMI_FRL6 = 15,		/*! HDMI FRL 6 channel */
+	VHD_CHNTYPE_DISABLE = 0,           /*! Channel not present in the board layout */
+	VHD_CHNTYPE_HDSDI = 2,             /*! HD-SDI channel */
+	VHD_CHNTYPE_3GSDI = 3,             /*! 3G-SDI channel */
+	VHD_CHNTYPE_DVI = 4,               /*! DVI channel */
+	VHD_CHNTYPE_ASI = 5,               /*! ASI channel */
+	VHD_CHNTYPE_HDMI_TMDS = 6,         /*! HDMI TMDS channel */
+	VHD_CHNTYPE_DISPLAYPORT = 7,       /*! Display port channel */
+	VHD_CHNTYPE_12GSDI = 8,            /*! 12G-SDI channel */
+	VHD_CHNTYPE_3GSDI_ASI = 10,        /*! 3G-SDI/ASI channel */
+	VHD_CHNTYPE_12GSDI_ASI = 11,       /*! 12G-SDI/ASI channel */
+	VHD_CHNTYPE_HDMI_FRL3 = 12,        /*! HDMI FRL 3 channel */
+	VHD_CHNTYPE_HDMI_FRL4 = 13,        /*! HDMI FRL 4 channel */
+	VHD_CHNTYPE_HDMI_FRL5 = 14,        /*! HDMI FRL 5 channel */
+	VHD_CHNTYPE_HDMI_FRL6 = 15,        /*! HDMI FRL 6 channel */
 	NB_VHD_CHANNELTYPE = 16
 };
 
@@ -598,12 +598,12 @@ enum class VHD_TRANSFERSCHEME : uint32
 
 #pragma region Function definitions
 
-typedef VHD::ULONG (*VHD_GetApiInfo)(VHD::ULONG *ApiVersion, VHD::ULONG *NbBoards);
-typedef VHD::ULONG (*VHD_GetVideoCharacteristics)(VHD_VIDEOSTANDARD VideoStandard, VHD::ULONG *Width, VHD::ULONG *Height, VHD::Bool *Interlaced, VHD::ULONG *FrameRate);
-typedef VHD::ULONG (*VHD_GetHdmiVideoCharacteristics)(VHD_DV_HDMI_VIDEOSTANDARD VideoStd, VHD::ULONG *Width, VHD::ULONG *Height, VHD::Bool *Interlaced, VHD::ULONG *FrameRate);
+typedef VHD::ULONG(*VHD_GetApiInfo)(VHD::ULONG* ApiVersion, VHD::ULONG* NbBoards);
+typedef VHD::ULONG(*VHD_GetVideoCharacteristics)(VHD_VIDEOSTANDARD VideoStandard, VHD::ULONG* Width, VHD::ULONG* Height, VHD::Bool* Interlaced, VHD::ULONG* FrameRate);
+typedef VHD::ULONG(*VHD_GetHdmiVideoCharacteristics)(VHD_DV_HDMI_VIDEOSTANDARD VideoStd, VHD::ULONG* Width, VHD::ULONG* Height, VHD::Bool* Interlaced, VHD::ULONG* FrameRate);
 
-typedef VHD::ULONG (*VHD_OpenBoardHandle)(VHD::ULONG BoardIndex, VHDHandle *BoardHandle, VHDHandle OnStateChangeEvent, VHD::ULONG StateChangeMask);
-typedef VHD::ULONG (*VHD_CloseBoardHandle)(VHDHandle BoardHandle);
+typedef VHD::ULONG(*VHD_OpenBoardHandle)(VHD::ULONG BoardIndex, VHDHandle* BoardHandle, VHDHandle OnStateChangeEvent, VHD::ULONG StateChangeMask);
+typedef VHD::ULONG(*VHD_CloseBoardHandle)(VHDHandle BoardHandle);
 
 typedef const char* (*VHD_GetBoardModel)(VHD::ULONG BoardIndex);
 typedef VHD::ULONG(*VHD_GetBoardProperty)(VHDHandle BoardHandle, VHD::ULONG Property, VHD::ULONG* Value);
@@ -611,32 +611,32 @@ typedef VHD::ULONG(*VHD_GetBoardCapability)(VHDHandle BoardHandle, VHD_CORE_BOAR
 typedef VHD::ULONG(*VHD_GetBoardCapSDIVideoStandard)(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_VIDEOSTANDARD VideoStandard, VHD::Bool* IsCapable);
 typedef VHD::ULONG(*VHD_GetBoardCapSDIInterface)(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_INTERFACE Interface, VHD::Bool* IsCapable);
 
-typedef VHD::ULONG (*VHD_SetBoardProperty)(VHDHandle BoardHandle, VHD::ULONG Property, VHD::ULONG Value);
+typedef VHD::ULONG(*VHD_SetBoardProperty)(VHDHandle BoardHandle, VHD::ULONG Property, VHD::ULONG Value);
 
-typedef VHD::ULONG (*VHD_OpenStreamHandle)(VHDHandle BoardHandle, VHD::ULONG StreamType, VHD::ULONG ProcessingMode, VHD::Bool *SetupLock, VHDHandle *StreamHandle, VHDHandle OnDataReadyEvent);
-typedef VHD::ULONG (*VHD_CloseStreamHandle)(VHDHandle StreamHandle);
+typedef VHD::ULONG(*VHD_OpenStreamHandle)(VHDHandle BoardHandle, VHD::ULONG StreamType, VHD::ULONG ProcessingMode, VHD::Bool* SetupLock, VHDHandle* StreamHandle, VHDHandle OnDataReadyEvent);
+typedef VHD::ULONG(*VHD_CloseStreamHandle)(VHDHandle StreamHandle);
 
-typedef VHD::ULONG (*VHD_GetStreamProperty)(VHDHandle StreamHandle, VHD::ULONG Property, VHD::ULONG *Value);
+typedef VHD::ULONG(*VHD_GetStreamProperty)(VHDHandle StreamHandle, VHD::ULONG Property, VHD::ULONG* Value);
 
-typedef VHD::ULONG (*VHD_SetStreamProperty)(VHDHandle StreamHandle, VHD::ULONG Property, VHD::ULONG Value);
+typedef VHD::ULONG(*VHD_SetStreamProperty)(VHDHandle StreamHandle, VHD::ULONG Property, VHD::ULONG Value);
 
 typedef VHD::ULONG(*VHD_SetStreamProperty)(VHDHandle StreamHandle, VHD::ULONG Property, VHD::ULONG Value);
 typedef VHD::ULONG(*VHD_PresetTimingStreamProperties)(VHDHandle StreamHandle, VHD_DV_STANDARD VideoStandard, VHD::ULONG ActiveWidth, VHD::ULONG ActiveHeight, VHD::ULONG RefreshRate, VHD::Bool Interlaced);
 
-typedef VHD::ULONG (*VHD_StartStream)(VHDHandle StreamHandle);
-typedef VHD::ULONG (*VHD_StopStream)(VHDHandle StreamHandle);
+typedef VHD::ULONG(*VHD_StartStream)(VHDHandle StreamHandle);
+typedef VHD::ULONG(*VHD_StopStream)(VHDHandle StreamHandle);
 
-typedef VHD::ULONG (*VHD_LockSlotHandle)(VHDHandle StreamHandle, VHDHandle *SlotHandle);
-typedef VHD::ULONG (*VHD_UnlockSlotHandle)(VHDHandle SlotHandle);
+typedef VHD::ULONG(*VHD_LockSlotHandle)(VHDHandle StreamHandle, VHDHandle* SlotHandle);
+typedef VHD::ULONG(*VHD_UnlockSlotHandle)(VHDHandle SlotHandle);
 
-typedef VHD::ULONG (*VHD_GetSlotBuffer)(VHDHandle SlotHandle, VHD::ULONG BufferType, VHD::BYTE **Buffer, VHD::ULONG *BufferSize);
+typedef VHD::ULONG(*VHD_GetSlotBuffer)(VHDHandle SlotHandle, VHD::ULONG BufferType, VHD::BYTE** Buffer, VHD::ULONG* BufferSize);
 
 typedef VHD::ULONG(*VHD_GetSlotTimecode)(VHDHandle SlotHandle, VHD_TIMECODE_SOURCE TimecodeSource, VHD_TIMECODE* TimeCode);
-typedef VHD::ULONG (*VHD_GetTimecode)(VHDHandle BoardHandle, VHD_TIMECODE_SOURCE TcSource, VHD::Bool *Locked, float *FrameRate, VHD_TIMECODE *TimeCode);
-typedef VHD::ULONG (*VHD_DetectCompanionCard)(VHDHandle BoardHandle, VHD_COMPANION_CARD_TYPE CompanionCardType, VHD::Bool *IsPresent);
+typedef VHD::ULONG(*VHD_GetTimecode)(VHDHandle BoardHandle, VHD_TIMECODE_SOURCE TcSource, VHD::Bool* Locked, float* FrameRate, VHD_TIMECODE* TimeCode);
+typedef VHD::ULONG(*VHD_DetectCompanionCard)(VHDHandle BoardHandle, VHD_COMPANION_CARD_TYPE CompanionCardType, VHD::Bool* IsPresent);
 
-typedef VHD::ULONG (*VHD_StartTimer)(VHDHandle BoardHandle, VHD_TIMER_SOURCE Source, VHDHandle *TimerHandle);
-typedef VHD::ULONG (*VHD_WaitOnNextTimerTick)(VHDHandle TimerHandle, VHD::ULONG Timeout);
-typedef VHD::ULONG (*VHD_StopTimer)(VHDHandle TimerHandle);
+typedef VHD::ULONG(*VHD_StartTimer)(VHDHandle BoardHandle, VHD_TIMER_SOURCE Source, VHDHandle* TimerHandle);
+typedef VHD::ULONG(*VHD_WaitOnNextTimerTick)(VHDHandle TimerHandle, VHD::ULONG Timeout);
+typedef VHD::ULONG(*VHD_StopTimer)(VHDHandle TimerHandle);
 
 #pragma endregion
