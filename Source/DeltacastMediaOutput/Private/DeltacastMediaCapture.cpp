@@ -17,6 +17,7 @@
 
 #include "DeltacastDefinition.h"
 #include "DeltacastHelpers.h"
+#include "DeltacastMediaShaders.h"
 #include "DeltacastMediaOutput.h"
 #include "DeltacastSdk.h"
 #include "IDeltacastMediaModule.h"
@@ -24,6 +25,7 @@
 #include "MediaIOCoreEncodeTime.h"
 #include "MediaIOCoreFileWriter.h"
 #include "Misc/ScopeLock.h"
+#include "ScreenPass.h"
 #include "Slate/SceneViewport.h"
 #include "Widgets/SViewport.h"
 
@@ -40,28 +42,29 @@ static FAutoConsoleCommand DeltacastWriteInputRawDataCmd(
 
 namespace DeltacastMediaCaptureUtils
 {
-	auto GetBufferPackingFromPixelFormat(const EDeltacastMediaOutputPixelFormat PixelFormat)
+	auto GetBufferPackingFromPixelFormat(const EDeltacastMediaOutputPixelFormat PixelFormat, const bool IsKeyEnabled)
 	{
 		switch (PixelFormat)
 		{
 			case EDeltacastMediaOutputPixelFormat::PF_8BIT_RGBA:
 				return VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_RGB_32;
 			case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
-				return VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUV422_10;
+				return IsKeyEnabled ? VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_10 : VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUV422_10;
 			case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422: [[fallthrough]];
 			default:
-				return VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUV422_8;
+				return IsKeyEnabled ? VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_8 : VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUV422_8;
 		}
 	}
 
 	std::optional<VHD_INTERFACE> GetInterface(const EMediaIOTransportType         TransportType,
+		                                       const bool                          IsKeyEnabled,
 	                                          const EMediaIOQuadLinkTransportType QuadTransportType,
 	                                          const VHD_VIDEOSTANDARD             VideoStandard)
 	{
 		switch (TransportType)
 		{
 			case EMediaIOTransportType::SingleLink:
-				return Deltacast::Helpers::GetSingleLinkInterface(VideoStandard);
+				return Deltacast::Helpers::GetSingleLinkInterface(VideoStandard, IsKeyEnabled);
 			case EMediaIOTransportType::QuadLink:
 				{
 					const auto QuadLinkType = [QuadTransportType]() -> std::optional<Deltacast::Helpers::EQuadLinkType>
@@ -83,7 +86,7 @@ namespace DeltacastMediaCaptureUtils
 						return {};
 					}
 
-					return Deltacast::Helpers::GetQuadLinkInterface(VideoStandard, QuadLinkType.value());
+					return Deltacast::Helpers::GetQuadLinkInterface(VideoStandard, QuadLinkType.value(), IsKeyEnabled);
 				}
 			case EMediaIOTransportType::DualLink: [[fallthrough]];
 			case EMediaIOTransportType::HDMI: [[fallthrough]];
@@ -234,6 +237,18 @@ void UDeltacastMediaCapture::OnFrameCaptured_RenderingThread(const FCaptureBaseD
 				EncodePixelFormat = EMediaIOCoreEncodePixelFormat::YUVv210;
 				OutputFilename = TEXT("Deltacast_Input_10_YUV");
 				break;
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_8:
+				Stride = Width * 4;
+				TimeEncodeWidth = Width * 4;
+				EncodePixelFormat = EMediaIOCoreEncodePixelFormat::CharUYVY;
+				OutputFilename = TEXT("Deltacast_Input_8_YUVK");
+				break;
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_10:
+				Stride = Width * 8;
+				TimeEncodeWidth = Width * 2;
+				EncodePixelFormat = EMediaIOCoreEncodePixelFormat::YUVv210;
+				OutputFilename = TEXT("Deltacast_Input_10_YUVK");
+				break;
 			default:
 				break;
 		}
@@ -338,6 +353,76 @@ void UDeltacastMediaCapture::OnFrameCaptured_RenderingThread(const FCaptureBaseD
 	}
 }
 
+void UDeltacastMediaCapture::OnCustomCapture_RenderingThread(FRDGBuilder& GraphBuilder, const FCaptureBaseData& InBaseData, TSharedPtr<FMediaCaptureUserData, ESPMode::ThreadSafe> InUserData, FRDGTextureRef InSourceTexture, FRDGTextureRef OutputTexture, const FRHICopyTextureInfo& CopyInfo, FVector2D CropU, FVector2D CropV)
+{
+	const UDeltacastMediaOutput* const DeltacastOutput = CastChecked<UDeltacastMediaOutput>(MediaOutput);
+	switch (DeltacastOutput->PixelFormat)
+	{
+	case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422:
+	{
+		// Configure source/output viewport to get the right UV scaling from source texture to output texture
+		const FIntRect ViewRect(CopyInfo.GetSourceRect());
+		FScreenPassTextureViewport InputViewport(InSourceTexture, ViewRect);
+		FScreenPassTextureViewport OutputViewport(OutputTexture);
+
+		FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+		TShaderMapRef<FRGBA8toYUVK4224ConvertPS> PixelShader(GlobalShaderMap);
+		TShaderMapRef<FScreenPassVS> VertexShader(GlobalShaderMap);
+
+		const FMatrix& ConversionMatrix = GetRGBToYUVConversionMatrix();
+		const bool bDoLinearToSRGB = GetDesiredCaptureOptions().bApplyLinearToSRGBConversion;
+		FRGBA8toYUVK4224ConvertPS::FParameters* Parameters = PixelShader->AllocateAndSetParameters(GraphBuilder, InSourceTexture, ConversionMatrix, MediaShaders::YUVOffset8bits, bDoLinearToSRGB, OutputTexture);
+		AddDrawScreenPass(GraphBuilder, RDG_EVENT_NAME("RGBA8ToYUVK"), FScreenPassViewInfo(), OutputViewport, InputViewport, VertexShader, PixelShader, Parameters);
+		break;
+	}
+	case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
+	{
+		// Configure source/output viewport to get the right UV scaling from source texture to output texture
+		const FIntRect ViewRect(CopyInfo.GetSourceRect());
+		FScreenPassTextureViewport InputViewport(InSourceTexture, ViewRect);
+		FScreenPassTextureViewport OutputViewport(OutputTexture);
+
+		FGlobalShaderMap* GlobalShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+		TShaderMapRef<FRGBA16toYUVK4224ConvertPS> PixelShader(GlobalShaderMap);
+		TShaderMapRef<FScreenPassVS> VertexShader(GlobalShaderMap);
+
+		const FMatrix& ConversionMatrix = GetRGBToYUVConversionMatrix();
+		const bool bDoLinearToSRGB = GetDesiredCaptureOptions().bApplyLinearToSRGBConversion;
+		FRGBA16toYUVK4224ConvertPS::FParameters* Parameters = PixelShader->AllocateAndSetParameters(GraphBuilder, InSourceTexture, ConversionMatrix, MediaShaders::YUVOffset10bits, bDoLinearToSRGB, OutputTexture);
+		AddDrawScreenPass(GraphBuilder, RDG_EVENT_NAME("RGBA16ToYUVK"), FScreenPassViewInfo(), OutputViewport, InputViewport, VertexShader, PixelShader, Parameters);
+		break;
+	}
+	}	
+}
+
+FIntPoint UDeltacastMediaCapture::GetCustomOutputSize(const FIntPoint& InSize) const
+{
+	const UDeltacastMediaOutput* const DeltacastOutput = CastChecked<UDeltacastMediaOutput>(MediaOutput);
+	switch (DeltacastOutput->PixelFormat)
+	{
+	case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422:
+		return FIntPoint((InSize.X * 3) / 4, InSize.Y);
+	case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
+		return FIntPoint(InSize.X / 2, InSize.Y);
+	default:
+		return InSize;
+	}
+}
+
+EPixelFormat UDeltacastMediaCapture::GetCustomOutputPixelFormat(const EPixelFormat& InPixelFormat) const
+{
+	const UDeltacastMediaOutput* const DeltacastOutput = CastChecked<UDeltacastMediaOutput>(MediaOutput);
+	switch (DeltacastOutput->PixelFormat)
+	{
+	case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422:
+		return PF_R32_UINT;
+	case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
+		return PF_R32G32_UINT;
+	default:
+		return InPixelFormat;
+	}
+}
+
 
 bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutput)
 {
@@ -362,6 +447,7 @@ bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutp
 	const auto BoardIndex            = static_cast<VHD::ULONG>(InMediaOutput->OutputConfiguration.MediaConfiguration.MediaConnection.Device.DeviceIdentifier);
 	const auto PortIndex             = InMediaOutput->OutputConfiguration.MediaConfiguration.MediaConnection.PortIdentifier;
 
+	const auto bIsKeyerEnabled       = InMediaOutput->OutputConfiguration.OutputType == EMediaIOOutputType::FillAndKey;
 	const auto bIsEuropeanClock      = Deltacast::Helpers::IsDeviceModeIdentifierEuropeanClock(DeviceModeIdentifier);
 	const auto bIsSdiMode            = Deltacast::Helpers::IsDeviceModeIdentifierSdi(DeviceModeIdentifier);
 	const auto bIsDvMode             = Deltacast::Helpers::IsDeviceModeIdentifierDv(DeviceModeIdentifier);
@@ -376,7 +462,8 @@ bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutp
 	bInterlaced = InMediaOutput->OutputConfiguration.MediaConfiguration.MediaMode.Standard != EMediaIOStandardType::Progressive;
 	const auto TransportType = InMediaOutput->OutputConfiguration.MediaConfiguration.MediaConnection.TransportType;
 	const auto QuadTransportType = InMediaOutput->OutputConfiguration.MediaConfiguration.MediaConnection.QuadTransportType;
-	BufferPacking = DeltacastMediaCaptureUtils::GetBufferPackingFromPixelFormat(InMediaOutput->PixelFormat);
+	const auto IsKeyEnabled = InMediaOutput->OutputConfiguration.OutputType == EMediaIOOutputType::FillAndKey;
+	BufferPacking = DeltacastMediaCaptureUtils::GetBufferPackingFromPixelFormat(InMediaOutput->PixelFormat, IsKeyEnabled);
 	const auto BufferDepth = InMediaOutput->NumberOfDeltacastBuffers;
 	const auto BufferPreLoad = BufferDepth / 2;
 	const auto LinkCount = TransportType == EMediaIOTransportType::SingleLink ||
@@ -425,13 +512,13 @@ bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutp
 
 	if (bIsSdiMode)
 	{
-	
 		const auto ClockDivisor = bIsEuropeanClock ? VHD_CLOCKDIVISOR::VHD_CLOCKDIV_1 : VHD_CLOCKDIVISOR::VHD_CLOCKDIV_1001;
 
 		[[maybe_unused]] const auto SetClockDivisorResult = DeltacastSdk.SetBoardProperty(BoardHandle, VHD_SDI_BOARDPROPERTY::VHD_SDI_BP_CLOCK_SYSTEM, static_cast<VHD::ULONG>(ClockDivisor));
 
 		StreamHandle = DeltacastSdk.OpenStream(BoardHandle, StreamType, VHD_SDI_STREAMPROCMODE::VHD_SDI_STPROC_DISJOINED_VIDEO).value_or(VHD::InvalidHandle);
 	}
+
 	if (bIsDvMode)
 	{
 		StreamHandle = DeltacastSdk.OpenStream(BoardHandle, StreamType, VHD_DV_STREAMPROCMODE::VHD_DV_STPROC_DISJOINED_VIDEO).value_or(VHD::InvalidHandle);
@@ -449,7 +536,7 @@ bool UDeltacastMediaCapture::Initialize(const UDeltacastMediaOutput *InMediaOutp
 
 	if (bIsSdiMode)
 	{
-		const auto Interface = DeltacastMediaCaptureUtils::GetInterface(TransportType, QuadTransportType, SdiVideoStandard);
+		const auto Interface = DeltacastMediaCaptureUtils::GetInterface(TransportType, bIsKeyerEnabled, QuadTransportType, SdiVideoStandard);
 		if (!Interface.has_value())
 		{
 			BoardCleanUp();

@@ -15,7 +15,10 @@
 
 #include "IDeltacastMediaOutputModule.h"
 
+#include "Interfaces/IPluginManager.h"
+#include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
+#include "ShaderCore.h"
 
 #define LOCTEXT_NAMESPACE "DeltacastMediaOutput"
 
@@ -23,6 +26,12 @@ DEFINE_LOG_CATEGORY(LogDeltacastMediaOutput);
 
 class FDeltacastMediaOutputModule : public IDeltacastMediaOutputModule
 {
+public: //~IModuleInterface interface
+   virtual void StartupModule() override
+   {
+      FString PluginShaderDir = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("DeltacastMedia"))->GetBaseDir(), TEXT("Shaders"));
+      AddShaderSourceDirectoryMapping(TEXT("/Plugin/DeltacastMedia"), PluginShaderDir);
+   }
 };
 
 IMPLEMENT_MODULE(FDeltacastMediaOutputModule, DeltacastMediaOutput)

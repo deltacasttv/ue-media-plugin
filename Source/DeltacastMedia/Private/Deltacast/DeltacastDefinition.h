@@ -368,18 +368,26 @@ enum class VHD_VIDEOSTANDARD : uint32
 UENUM()
 enum class VHD_INTERFACE : uint32
 {
-	VHD_INTERFACE_SD_259 = 1,				   /*! SD SMPTE 259 interface */
-	VHD_INTERFACE_HD_292_1 = 2,				   /*! HD SMPTE 291-1 interface */
-	VHD_INTERFACE_3G_A_425_1 = 4,			   /*! 3G-A SMPTE 425-1 interface */
-	VHD_INTERFACE_6G_2081_10 = 23,			   /*! 6G over SMPTE 2081-10 interface */
-	VHD_INTERFACE_12G_2082_10 = 24,			   /*! 12G over SMPTE 2082-10 interface */
-	VHD_INTERFACE_4XHD_QUADRANT = 5,		   /*! 4xHD interface (4K image is split into 4 quadrants for transport) */
-	VHD_INTERFACE_4X3G_A_QUADRANT = 6,		   /*! 4x3G-A interface (4K image is split into 4 quadrants for transport) */
-	VHD_INTERFACE_4X3G_A_425_5 = 12,		   /*! 4x3G-A SMPTE 425-5 interface (4K image is split into 4 images with the 2-sample interleave division rule for transport) */
+	VHD_INTERFACE_SD_259 = 1,				       /*! SD SMPTE 259 interface */
+	VHD_INTERFACE_HD_292_1 = 2,				    /*! HD SMPTE 291-1 interface */
+	VHD_INTERFACE_3G_A_425_1 = 4,			       /*! 3G-A SMPTE 425-1 interface */
+	VHD_INTERFACE_6G_2081_10 = 23,			    /*! 6G over SMPTE 2081-10 interface */
+	VHD_INTERFACE_12G_2082_10 = 24,			    /*! 12G over SMPTE 2082-10 interface */
+	VHD_INTERFACE_SD_DUAL = 7,                 /*! SD Dual Link (application of SMPTE 372 to SD) */
+	VHD_INTERFACE_HD_DUAL = 3,                 /*! HD Dual Link SMPTE 372 interface*/
+	VHD_INTERFACE_3G_A_DUAL = 8,               /*! 3G-A Dual interface (application of SMPTE 372 to 3GA)*/
+	VHD_INTERFACE_6G_2081_10_DUAL = 28,        /*! 6G over SMPTE 2081-10, dual interface */
+	VHD_INTERFACE_12G_2082_10_DUAL = 29,       /*! 12G over SMPTE 2082-10, dual interface */
+	VHD_INTERFACE_4XHD_QUADRANT_DUAL = 16,     /*! 4xHD interface (4K image is split into 4 quadrants for transport), dual interface*/
+	VHD_INTERFACE_4X3G_A_QUADRANT_DUAL = 17,   /*! 4x3G-A interface (4K image is split into 4 quadrants for transport), dual interface*/
+	VHD_INTERFACE_4X3G_A_425_5_DUAL = 18,      /*! 4x3G-A SMPTE 425-5 interface  (4K image is split into 4 images with the 2-sample interleave division rule for transport), dual interface*/
+	VHD_INTERFACE_4XHD_QUADRANT = 5,				 /*! 4xHD interface (4K image is split into 4 quadrants for transport) */
+	VHD_INTERFACE_4X3G_A_QUADRANT = 6,		    /*! 4x3G-A interface (4K image is split into 4 quadrants for transport) */
+	VHD_INTERFACE_4X3G_A_425_5 = 12,				 /*! 4x3G-A SMPTE 425-5 interface (4K image is split into 4 images with the 2-sample interleave division rule for transport) */
 	VHD_INTERFACE_4X6G_2081_10_QUADRANT = 26,  /*! 4x6G over SMPTE 2081-10 interface (8K image is split into 4 quadrants for transport) */
-	VHD_INTERFACE_4X6G_2081_12 = 30,		   /*! 4x6G over SMPTE 2081-12 */
+	VHD_INTERFACE_4X6G_2081_12 = 30,				 /*! 4x6G over SMPTE 2081-12 */
 	VHD_INTERFACE_4X12G_2082_10_QUADRANT = 27, /*! 4x12G over SMPTE 2082-10 interface (8K image is split into 4 quadrants for transport) */
-	VHD_INTERFACE_4X12G_2082_12 = 31,		   /*! 4x12G over SMPTE 2082-12 */
+	VHD_INTERFACE_4X12G_2082_12 = 31,		    /*! 4x12G over SMPTE 2082-12 */
 	NB_VHD_INTERFACE = 32,
 };
 
@@ -483,7 +491,9 @@ enum class VHD_SDI_BUFFERTYPE : uint32
 enum class VHD_BUFFERPACKING : uint32
 {
 	VHD_BUFPACK_VIDEO_YUV422_8 = 0,
+	VHD_BUFPACK_VIDEO_YUVK4224_8 = 1,
 	VHD_BUFPACK_VIDEO_YUV422_10 = 2,
+	VHD_BUFPACK_VIDEO_YUVK4224_10 = 3,
 	VHD_BUFPACK_VIDEO_RGB_32 = 8,
 };
 
@@ -610,6 +620,7 @@ typedef VHD::ULONG(*VHD_GetBoardProperty)(VHDHandle BoardHandle, VHD::ULONG Prop
 typedef VHD::ULONG(*VHD_GetBoardCapability)(VHDHandle BoardHandle, VHD_CORE_BOARD_CAPABILITY BoardCapability, VHD::ULONG* Value);
 typedef VHD::ULONG(*VHD_GetBoardCapSDIVideoStandard)(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_VIDEOSTANDARD VideoStandard, VHD::Bool* IsCapable);
 typedef VHD::ULONG(*VHD_GetBoardCapSDIInterface)(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_INTERFACE Interface, VHD::Bool* IsCapable);
+typedef VHD::ULONG(*VHD_GetBoardCapBufferPacking)(VHDHandle BoardHandle, VHD_BUFFERPACKING BufferPacking, VHD::Bool* IsCapable);
 
 typedef VHD::ULONG(*VHD_SetBoardProperty)(VHDHandle BoardHandle, VHD::ULONG Property, VHD::ULONG Value);
 

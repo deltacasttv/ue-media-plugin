@@ -206,8 +206,8 @@ bool UDeltacastMediaSource::Validate() const
 
 		PortConfig.VideoStandard = VideoStandard;
 		PortConfig.Interface     = IsSingleLink
-			                           ? Deltacast::Helpers::GetSingleLinkInterface(VideoStandard)
-			                           : Deltacast::Helpers::GetQuadLinkInterface(VideoStandard, QuadLinkType);
+			                           ? Deltacast::Helpers::GetSingleLinkInterface(VideoStandard, false)
+			                           : Deltacast::Helpers::GetQuadLinkInterface(VideoStandard, QuadLinkType, false);
 
 		auto &DeltacastSdk = FDeltacast::GetSdk();
 

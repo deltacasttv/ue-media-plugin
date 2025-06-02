@@ -595,6 +595,23 @@ namespace Deltacast::Helpers
 		}
 	}
 
+	bool IsYuvk(const VHD_BUFFERPACKING BufferPacking)
+	{
+		switch (BufferPacking)
+		{
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_8: [[fallthrough]];
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_10:
+				return true;
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUV422_8: [[fallthrough]];
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUV422_10: [[fallthrough]];
+			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_RGB_32:
+				return false;
+			default:
+				UE_LOG(LogDeltacastMedia, Fatal, TEXT("`IsYuvk` unhandled buffer packing: %u"), BufferPacking);
+				return false;
+		}
+	}
+
 	bool IsSingleLink(const VHD_INTERFACE Interface)
 	{
 		switch (Interface)
@@ -603,8 +620,16 @@ namespace Deltacast::Helpers
 		case VHD_INTERFACE::VHD_INTERFACE_HD_292_1: [[fallthrough]];
 		case VHD_INTERFACE::VHD_INTERFACE_3G_A_425_1: [[fallthrough]];
 		case VHD_INTERFACE::VHD_INTERFACE_6G_2081_10: [[fallthrough]];
-		case VHD_INTERFACE::VHD_INTERFACE_12G_2082_10:
+		case VHD_INTERFACE::VHD_INTERFACE_12G_2082_10: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_SD_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_HD_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_3G_A_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_6G_2081_10_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_12G_2082_10_DUAL:
 			return true;
+	   case VHD_INTERFACE::VHD_INTERFACE_4XHD_QUADRANT_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_QUADRANT_DUAL: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_425_5_DUAL: [[fallthrough]];
 		case VHD_INTERFACE::VHD_INTERFACE_4XHD_QUADRANT: [[fallthrough]];
 		case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_QUADRANT: [[fallthrough]];
 		case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_425_5: [[fallthrough]];
@@ -616,6 +641,39 @@ namespace Deltacast::Helpers
 		case VHD_INTERFACE::NB_VHD_INTERFACE: [[fallthrough]];
 		default:
 			UE_LOG(LogDeltacastMedia, Fatal, TEXT("`IsSingleLink` unhandled interface: %u"), Interface);
+			return false;
+		}
+	}
+
+	bool IsDual(const VHD_INTERFACE Interface)
+	{
+		switch (Interface)
+		{
+	   case VHD_INTERFACE::VHD_INTERFACE_SD_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_HD_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_3G_A_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_6G_2081_10_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_12G_2082_10_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_4XHD_QUADRANT_DUAL: [[fallthrough]];
+	   case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_QUADRANT_DUAL: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_425_5_DUAL:
+			return true;
+		case VHD_INTERFACE::VHD_INTERFACE_SD_259: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_HD_292_1: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_3G_A_425_1: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_6G_2081_10: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_12G_2082_10: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4XHD_QUADRANT: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_QUADRANT: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X3G_A_425_5: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X6G_2081_10_QUADRANT: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X6G_2081_12: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X12G_2082_10_QUADRANT: [[fallthrough]];
+		case VHD_INTERFACE::VHD_INTERFACE_4X12G_2082_12:
+			return false;
+		case VHD_INTERFACE::NB_VHD_INTERFACE: [[fallthrough]];
+		default:
+			UE_LOG(LogDeltacastMedia, Fatal, TEXT("`IsDual` unhandled interface: %u"), Interface);
 			return false;
 		}
 	}
@@ -706,14 +764,19 @@ namespace Deltacast::Helpers
 		return Width % 48 != 0;
 	}
 
-
-	VHD_INTERFACE GetSingleLinkInterface(const VHD_VIDEOSTANDARD VideoStandard)
+	VHD_INTERFACE GetSingleLinkInterface(const VHD_VIDEOSTANDARD VideoStandard, const bool IsKeyEnabled)
 	{
 		static constexpr auto NbSdiInterfaces = SdiInterfaces.size();
 
 		for (int i = 0; i < NbSdiInterfaces; ++i)
 		{
 			if (!IsSingleLink(SdiInterfaces[i]))
+			{
+				continue;
+			}
+
+			if ((IsKeyEnabled && !IsDual(SdiInterfaces[i])) ||
+				 (!IsKeyEnabled && IsDual(SdiInterfaces[i])))
 			{
 				continue;
 			}
@@ -729,13 +792,19 @@ namespace Deltacast::Helpers
 		return VHD_INTERFACE::NB_VHD_INTERFACE;
 	}
 
-	VHD_INTERFACE GetQuadLinkInterface(const VHD_VIDEOSTANDARD VideoStandard, const EQuadLinkType QuadLinkType)
+	VHD_INTERFACE GetQuadLinkInterface(const VHD_VIDEOSTANDARD VideoStandard, const EQuadLinkType QuadLinkType, const bool IsKeyEnabled)
 	{
 		static constexpr auto NbSdiInterfaces = SdiInterfaces.size();
 
 		for (int i = 0; i < NbSdiInterfaces; ++i)
 		{
 			if (IsSingleLink(SdiInterfaces[i]))
+			{
+				continue;
+			}
+
+			if ((IsKeyEnabled && !IsDual(SdiInterfaces[i])) ||
+				 (!IsKeyEnabled && IsDual(SdiInterfaces[i])))
 			{
 				continue;
 			}
