@@ -15,6 +15,7 @@ Typical applications of UE with DELTACAST cards :
 
 ## Plugin features
 - Video input and output support
+- Fill & Key output support
 - Support of DELTACAST SDI, HDMI and DisplayPort I/Os 
 - Resolutions from SD up to 8K60 
 - Genlock support : can lock the UE frame rate to match the reference input video 
@@ -23,7 +24,7 @@ Typical applications of UE with DELTACAST cards :
 - Handle DELTACAST board configuration
 
 ## Software requirements 
-- Unreal Engine 5 
+- Unreal Engine 5.3 or greater
 - Requires DELTACAST VideoMaster Redist
 - Windows and Linux
 

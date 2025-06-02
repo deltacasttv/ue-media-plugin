@@ -28,7 +28,7 @@ UENUM()
 enum class EDeltacastMediaOutputPixelFormat : uint8
 {
 	PF_8BIT_RGBA UMETA(DisplayName = "8bit RGBA"),
-	PF_8BIT_YUV422 UMETA(DisplayName = "8bit YUV"), 
+	PF_8BIT_YUV422 UMETA(DisplayName = "8bit YUV"),
 	PF_10BIT_YUV422 UMETA(DisplayName = "10bit YUV"),
 };
 
@@ -103,6 +103,7 @@ public: //~ UObject interface
 #endif //WITH_EDITOR
 
 private:
+	inline static constexpr auto DefaultPixelFormatFillAndKey = EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422;
 	inline static constexpr auto DefaultPixelFormatSdi = EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422;
 	inline static constexpr auto DefaultPixelFormatDv = EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422;
 

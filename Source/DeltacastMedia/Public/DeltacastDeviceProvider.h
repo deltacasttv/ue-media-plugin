@@ -46,14 +46,17 @@ public: //~ IMediaIOCoreDeviceProvider
 	virtual FMediaIOOutputConfiguration        GetDefaultOutputConfiguration() const override;
 	virtual FMediaIOVideoTimecodeConfiguration GetDefaultTimecodeConfiguration() const override;
 
+public:
+	TArray<FMediaIOConfiguration> GetOutputKeyConfigurations() const;
+
 private: //~ IMediaIOCoreDeviceProvider implementation without caching
-	TArray<FMediaIOConnection>                 GetConnections_Impl() const;
-	TArray<FMediaIOConfiguration>              GetConfigurations_Impl(bool bAllowInput, bool bAllowOutput) const;
-	TArray<FMediaIOInputConfiguration>         GetInputConfigurations_Impl() const;
-	TArray<FMediaIOOutputConfiguration>        GetOutputConfigurations_Impl() const;
-	TArray<FMediaIOVideoTimecodeConfiguration> GetTimecodeConfigurations_Impl() const;
-	TArray<FMediaIODevice>                     GetDevices_Impl() const;
-	TArray<FMediaIOMode>                       GetModes_Impl(bool bInOutput) const;
+	TArray<FMediaIOConnection>                                           GetConnections_Impl() const;
+	TTuple<TArray<FMediaIOConfiguration>, TArray<FMediaIOConfiguration>> GetConfigurations_Impl(bool bAllowInput, bool bAllowOutput) const;
+	TArray<FMediaIOInputConfiguration>                                   GetInputConfigurations_Impl() const;
+	TArray<FMediaIOOutputConfiguration>                                  GetOutputConfigurations_Impl() const;
+	TArray<FMediaIOVideoTimecodeConfiguration>                           GetTimecodeConfigurations_Impl() const;
+	TArray<FMediaIODevice>                                               GetDevices_Impl() const;
+	TArray<FMediaIOMode>                                                 GetModes_Impl(bool bInOutput) const;
 
 private:
 	friend class FDeltacastMediaModule;
@@ -69,6 +72,7 @@ private:
 	mutable TArray<FMediaIOConnection>                 ConnectionsCache;
 	mutable TArray<FMediaIOConfiguration>              ConfigurationsInputCache;
 	mutable TArray<FMediaIOConfiguration>              ConfigurationsOutputCache;
+	mutable TArray<FMediaIOConfiguration>              ConfigurationsKeyOutputCache;
 	mutable TArray<FMediaIOInputConfiguration>         InputConfigurationsCache;
 	mutable TArray<FMediaIOOutputConfiguration>        OutputConfigurationsCache;
 	mutable TArray<FMediaIOVideoTimecodeConfiguration> TimecodeConfigurationsCache;
