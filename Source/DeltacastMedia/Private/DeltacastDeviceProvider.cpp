@@ -131,9 +131,25 @@ bool FDeltacastDeviceProvider::CanDeviceDoAlpha(const FMediaIODevice &InDevice) 
 		return false;
 	}
 
-	// FillAndKey support check here
+	auto& DeltacastSdk = FDeltacast::GetSdk();
 
-	return false;
+	const auto BoardIndex = InDevice.DeviceIdentifier;
+	const auto BoardHandle = DeltacastSdk.OpenBoard(BoardIndex).value_or(VHD::InvalidHandle);
+	if (BoardHandle == VHD::InvalidHandle)
+	{
+		UE_LOG(LogDeltacastMedia, Warning, TEXT("Failed to open board index %d"), BoardIndex);
+		return false;
+	}
+
+	Deltacast::Helpers::TScopeExit CloseBoardHandle([&]() { DeltacastSdk.CloseBoardHandle(BoardHandle); });
+
+	const auto IsYuvkSupported = DeltacastSdk.GetBoardCapBufferPacking(BoardHandle, VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_8);
+	const auto TxCount = DeltacastSdk.GetTxCount(BoardHandle);
+
+	if (TxCount.value_or(0) < 2 || !IsYuvkSupported.value_or(false))
+		return false;
+	
+	return true;
 }
 
 
@@ -292,6 +308,7 @@ FMediaIOOutputConfiguration FDeltacastDeviceProvider::GetDefaultOutputConfigurat
 	Configuration.MediaConfiguration.bIsInput = false;
 	Configuration.OutputReference             = EMediaIOReferenceType::FreeRun;
 	Configuration.OutputType                  = EMediaIOOutputType::Fill;
+	Configuration.KeyPortIdentifier           = -1;
 	Configuration.ReferencePortIdentifier     = -1;
 
 	return Configuration;
@@ -305,6 +322,19 @@ FMediaIOVideoTimecodeConfiguration FDeltacastDeviceProvider::GetDefaultTimecodeC
 	Configuration.TimecodeFormat     = EMediaIOAutoDetectableTimecodeFormat::None;
 
 	return Configuration;
+}
+
+
+TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetOutputKeyConfigurations() const
+{
+	if (!FDeltacast::IsInitialized())
+	{
+		return {};
+	}
+
+	UpdateCache();
+
+	return ConfigurationsKeyOutputCache;
 }
 
 
@@ -390,13 +420,14 @@ TArray<FMediaIOConnection> FDeltacastDeviceProvider::GetConnections_Impl() const
 	return Results;
 }
 
-TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(const bool bAllowInput, const bool bAllowOutput) const
+TTuple<TArray<FMediaIOConfiguration>, TArray<FMediaIOConfiguration>> FDeltacastDeviceProvider::GetConfigurations_Impl(const bool bAllowInput, const bool bAllowOutput) const
 {
 	TArray<FMediaIOConfiguration> Results;
+	TArray<FMediaIOConfiguration> KeyResults;
 
 	if (!FDeltacast::IsInitialized())
 	{
-		return Results;
+		return TTuple<TArray<FMediaIOConfiguration>, TArray<FMediaIOConfiguration>>(Results, KeyResults);
 	}
 
 	auto& DeltacastSdk = FDeltacast::GetSdk();
@@ -404,7 +435,7 @@ TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(c
 	const auto NumberOfBoards = DeltacastSdk.GetNbBoards();
 	if (!NumberOfBoards)
 	{
-		return Results;
+		return TTuple<TArray<FMediaIOConfiguration>, TArray<FMediaIOConfiguration>>(Results, KeyResults);
 	}
 
 	for (VHD::ULONG BoardIndex = 0; BoardIndex < NumberOfBoards.value(); ++BoardIndex)
@@ -412,6 +443,8 @@ TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(c
 		FMediaIOConfiguration MediaConfiguration;
 		MediaConfiguration.MediaConnection.Device.DeviceIdentifier = BoardIndex;
 		MediaConfiguration.MediaConnection.Protocol = GetProtocolName();
+
+		const auto IsDualSupported = CanDeviceDoAlpha(MediaConfiguration.MediaConnection.Device);
 
 		const auto BoardModel = DeltacastSdk.GetBoardModel(BoardIndex);
 		if (BoardModel == nullptr)
@@ -453,6 +486,7 @@ TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(c
 					continue;
 				}
 
+				MediaConfiguration.bIsInput = SdiDescriptor.Base.bIsInput;
 				MediaConfiguration.MediaConnection.PortIdentifier = static_cast<int32>(SdiDescriptor.Base.PortIndex);
 
 				if (SdiDescriptor.IsSingleLink())
@@ -480,7 +514,16 @@ TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(c
 
 				MediaConfiguration.MediaMode = DeltacastDeviceProvider::ToMediaMode(SdiDescriptor);
 
-				Results.Add(MediaConfiguration);
+				if (SdiDescriptor.IsDual())
+				{
+					const auto IsDualSd = SdiDescriptor.Interface == VHD_INTERFACE::VHD_INTERFACE_SD_DUAL;
+					if (!SdiDescriptor.Base.bIsInput && IsDualSupported && !IsDualSd)
+						KeyResults.Add(MediaConfiguration);
+				}
+				else
+				{
+					Results.Add(MediaConfiguration);
+				}
 			}
 		}
 
@@ -502,6 +545,7 @@ TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(c
 					continue;
 				}
 
+				MediaConfiguration.bIsInput = DvDescriptor.Base.bIsInput;
 				MediaConfiguration.MediaConnection.PortIdentifier = static_cast<int32>(DvDescriptor.Base.PortIndex);
 
 				{
@@ -580,14 +624,13 @@ TArray<FMediaIOConfiguration> FDeltacastDeviceProvider::GetConfigurations_Impl(c
 	}
 #endif
 
-	return Results;
+	return TTuple<TArray<FMediaIOConfiguration>, TArray<FMediaIOConfiguration>>(Results, KeyResults);
 }
 
 TArray<FMediaIOInputConfiguration> FDeltacastDeviceProvider::GetInputConfigurations_Impl() const
 {
 	TArray<FMediaIOInputConfiguration> Results;
 	TArray<FMediaIOConfiguration>      InputConfigurations = GetConfigurations(true, false);
-	TArray<FMediaIOConnection>         OtherSources = GetConnections();
 
 	FMediaIOInputConfiguration DefaultInputConfiguration = GetDefaultInputConfiguration();
 	Results.Reset(InputConfigurations.Num() * 2);
@@ -609,26 +652,6 @@ TArray<FMediaIOInputConfiguration> FDeltacastDeviceProvider::GetInputConfigurati
 		// Build the list for fill
 		DefaultInputConfiguration.InputType = EMediaIOInputType::Fill;
 		Results.Add(DefaultInputConfiguration);
-
-		// Add all output port for key
-		if (bCanDoKeyAndFill)
-		{
-			DefaultInputConfiguration.InputType = EMediaIOInputType::FillAndKey;
-			for (const FMediaIOConnection& InputPort : OtherSources)
-			{
-				if (InputPort.Device == InputConfiguration.MediaConnection.Device &&
-					InputPort.TransportType == InputConfiguration.MediaConnection.TransportType &&
-					InputPort.PortIdentifier != InputConfiguration.MediaConnection.PortIdentifier)
-				{
-					if (InputPort.TransportType != EMediaIOTransportType::QuadLink ||
-						InputPort.QuadTransportType == InputConfiguration.MediaConnection.QuadTransportType)
-					{
-						DefaultInputConfiguration.KeyPortIdentifier = InputPort.PortIdentifier;
-						Results.Add(DefaultInputConfiguration);
-					}
-				}
-			}
-		}
 	}
 
 	return Results;
@@ -637,18 +660,13 @@ TArray<FMediaIOInputConfiguration> FDeltacastDeviceProvider::GetInputConfigurati
 TArray<FMediaIOOutputConfiguration> FDeltacastDeviceProvider::GetOutputConfigurations_Impl() const
 {
 	TArray<FMediaIOOutputConfiguration> Results;
-	TArray<FMediaIOConfiguration>       OutputConfigurations = GetConfigurations(false, true);
-	TArray<FMediaIOConnection>          OtherSources = GetConnections();
+	TArray<FMediaIOConfiguration>       OutputConfigurations    = GetConfigurations(false, true);
+	TArray<FMediaIOConfiguration>       OutputKeyConfigurations = GetOutputKeyConfigurations();
 
 	FMediaIOOutputConfiguration DefaultOutputConfiguration = GetDefaultOutputConfiguration();
-	Results.Reset(OutputConfigurations.Num() * 4);
+	Results.Reset(OutputConfigurations.Num() + OutputKeyConfigurations.Num());
 
-	int32 LastDeviceIndex = INDEX_NONE;
-	bool  bCanDoKeyAndFill = false;
-
-	for (const FMediaIOConfiguration& OutputConfiguration : OutputConfigurations)
-	{
-		auto BuildList = [&]()
+	auto BuildList = [&DefaultOutputConfiguration, &Results](const FMediaIOConfiguration& OutputConfiguration)
 		{
 			DefaultOutputConfiguration.MediaConfiguration = OutputConfiguration;
 
@@ -662,36 +680,23 @@ TArray<FMediaIOOutputConfiguration> FDeltacastDeviceProvider::GetOutputConfigura
 			}
 		};
 
-		// Update the Device Info
-		if (OutputConfiguration.MediaConnection.Device.DeviceIdentifier != LastDeviceIndex)
-		{
-			LastDeviceIndex = OutputConfiguration.MediaConnection.Device.DeviceIdentifier;
-			bCanDoKeyAndFill = CanDeviceDoAlpha(OutputConfiguration.MediaConnection.Device);
-		}
+	DefaultOutputConfiguration.OutputType = EMediaIOOutputType::Fill;
+	for (const FMediaIOConfiguration& OutputConfiguration : OutputConfigurations)
+	{		
+		BuildList(OutputConfiguration);
+	}
 
-		// Build the list for fill only
-		DefaultOutputConfiguration.OutputType = EMediaIOOutputType::Fill;
-		BuildList();
+	const auto& DeltacastSdk = FDeltacast::GetSdk();
 
-		// Add all output port for key
-		if (bCanDoKeyAndFill)
-		{
-			DefaultOutputConfiguration.OutputType = EMediaIOOutputType::FillAndKey;
-			for (const FMediaIOConnection& OutputPort : OtherSources)
-			{
-				if (OutputPort.Device == OutputConfiguration.MediaConnection.Device &&
-					OutputPort.TransportType == OutputConfiguration.MediaConnection.TransportType &&
-					OutputPort.PortIdentifier != OutputConfiguration.MediaConnection.PortIdentifier)
-				{
-					if (OutputPort.TransportType != EMediaIOTransportType::QuadLink ||
-						OutputPort.QuadTransportType == OutputConfiguration.MediaConnection.QuadTransportType)
-					{
-						DefaultOutputConfiguration.KeyPortIdentifier = OutputPort.PortIdentifier;
-						BuildList();
-					}
-				}
-			}
-		}
+	DefaultOutputConfiguration.OutputType = EMediaIOOutputType::FillAndKey;
+	for (const FMediaIOConfiguration& OutputConfiguration : OutputKeyConfigurations)
+	{
+		const auto bIsQuadLink = OutputConfiguration.MediaConnection.TransportType == EMediaIOTransportType::QuadLink;
+		const auto PortIdentifier = OutputConfiguration.MediaConnection.PortIdentifier;
+		const auto KeyOffset = bIsQuadLink ? 4 : DeltacastSdk.GetSingleLinkKeyOffset(OutputConfiguration.MediaConnection.Device.DeviceIdentifier);
+		DefaultOutputConfiguration.KeyPortIdentifier = PortIdentifier + KeyOffset;
+
+		BuildList(OutputConfiguration);
 	}
 
 	return Results;
@@ -884,8 +889,10 @@ void FDeltacastDeviceProvider::UpdateCache() const
 	{
 		CacheHardwareIdentifier = HardwareIdentifier;
 
-		ConfigurationsInputCache    = GetConfigurations_Impl(true, false);
-		ConfigurationsOutputCache   = GetConfigurations_Impl(false, true);
+		ConfigurationsInputCache    = GetConfigurations_Impl(true, false).Key;
+		const auto OutputConfigurations = GetConfigurations_Impl(false, true);
+		ConfigurationsOutputCache   = OutputConfigurations.Key;
+		ConfigurationsKeyOutputCache = OutputConfigurations.Value;
 		InputConfigurationsCache    = GetInputConfigurations_Impl();
 		OutputConfigurationsCache   = GetOutputConfigurations_Impl();
 		TimecodeConfigurationsCache = GetTimecodeConfigurations_Impl();
