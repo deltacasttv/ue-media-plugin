@@ -56,6 +56,7 @@ public: // Board
 	[[nodiscard]] VHD_ERRORCODE GetBoardCapability(VHDHandle BoardHandle, VHD_CORE_BOARD_CAPABILITY BoardCapability, VHD::ULONG *Value) const;
 	[[nodiscard]] VHD_ERRORCODE GetBoardCapSdiVideoStandard(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_VIDEOSTANDARD VideoStandard, bool *IsCapable) const;
 	[[nodiscard]] VHD_ERRORCODE GetBoardCapSdiInterface(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_INTERFACE Interface, bool *IsCapable) const;
+	[[nodiscard]] VHD_ERRORCODE GetBoardCapBufferPacking(VHDHandle BoardHandle, VHD_BUFFERPACKING BufferPacking, bool *IsCapable) const;
 
 	FORCEINLINE VHD_ERRORCODE SetBoardProperty(VHDHandle BoardHandle, VHD_CORE_BOARDPROPERTY Property, VHD::ULONG Value);
 	FORCEINLINE VHD_ERRORCODE SetBoardProperty(VHDHandle BoardHandle, VHD_SDI_BOARDPROPERTY Property, VHD::ULONG Value);
@@ -106,12 +107,15 @@ public: // Utils for detection
 
 	[[nodiscard]] std::optional<bool> GetBoardCapSdiVideoStandard(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_VIDEOSTANDARD VideoStandard) const;
 	[[nodiscard]] std::optional<bool> GetBoardCapSdiInterface(VHDHandle BoardHandle, VHD_STREAMTYPE StreamType, VHD_INTERFACE Interface) const;
+	[[nodiscard]] std::optional<bool> GetBoardCapBufferPacking(VHDHandle BoardHandle, VHD_BUFFERPACKING BufferPacking) const;
 
 	[[nodiscard]] std::optional<bool> IsFlexModule(VHDHandle BoardHandle) const;
 
 	[[nodiscard]] std::optional<bool> IsFieldMergingSupported(VHDHandle BoardHandle) const;
 
 	[[nodiscard]] FORCEINLINE std::optional<VHD::ULONG> GetStreamProperty(VHDHandle StreamHandle, VHD_CORE_STREAMPROPERTY Property) const;
+
+	[[nodiscard]] int GetSingleLinkKeyOffset(VHD::ULONG BoardIndex) const;
 
 public: // Utils for modification
 	// VHD:True = Loopback enabled, VHD:False = Loopback disabled
@@ -152,6 +156,7 @@ private:
 	VHD_GetBoardCapability Wrapper_GetBoardCapability = nullptr;
 	VHD_GetBoardCapSDIVideoStandard Wrapper_GetBoardCapSDIVideoStandard = nullptr;
 	VHD_GetBoardCapSDIInterface Wrapper_GetBoardCapSDIInterface = nullptr;
+	VHD_GetBoardCapBufferPacking Wrapper_GetBoardCapBufferPacking = nullptr;
 
 	VHD_SetBoardProperty Wrapper_SetBoardProperty = nullptr;
 
@@ -219,7 +224,6 @@ VHD_ERRORCODE FDeltacastSdk::GetBoardProperty(const VHDHandle BoardHandle, const
 {
 	return GetBoardProperty(BoardHandle, static_cast<VHD::ULONG>(Property), Value);
 }
-
 
 
 VHD_ERRORCODE FDeltacastSdk::SetBoardProperty(const VHDHandle BoardHandle, const VHD_CORE_BOARDPROPERTY Property, const VHD::ULONG Value)

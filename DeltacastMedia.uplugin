@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.1.0",
+	"VersionName": "1.3.0",
 	"FriendlyName": "Deltacast Media Player",
 	"Description": "Implements input and output using Deltacast cards.",
 	"Category": "Media Players",
@@ -56,7 +56,7 @@
 		{
 			"Name": "DeltacastMediaOutput",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
+			"LoadingPhase": "PostConfigInit",
 			"PlatformAllowList": [
 				"Win64",
 				"Linux"
