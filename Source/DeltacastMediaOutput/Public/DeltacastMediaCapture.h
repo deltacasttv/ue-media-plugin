@@ -47,6 +47,10 @@ protected: //~ UMediaCapture interface
 
 protected: //~ UMediaCapture interface
 	virtual void OnFrameCaptured_RenderingThread(const FCaptureBaseData &InBaseData, TSharedPtr<FMediaCaptureUserData, ESPMode::ThreadSafe> InUserData, void *InBuffer, int32 Width, int32 Height, int32 BytesPerRow) override;
+	virtual void OnCustomCapture_RenderingThread(FRDGBuilder& GraphBuilder, const FCaptureBaseData& InBaseData, TSharedPtr<FMediaCaptureUserData, ESPMode::ThreadSafe> InUserData, FRDGTextureRef InSourceTexture, FRDGTextureRef OutputTexture, const FRHICopyTextureInfo& CopyInfo, FVector2D CropU, FVector2D CropV) override;
+
+	virtual FIntPoint GetCustomOutputSize(const FIntPoint& InSize) const override;
+	virtual EPixelFormat GetCustomOutputPixelFormat(const EPixelFormat& InPixelFormat) const override;
 
 private:
 	bool Initialize(const UDeltacastMediaOutput *InMediaOutput);

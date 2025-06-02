@@ -69,6 +69,8 @@ namespace Deltacast::Device
 
 			[[nodiscard]] bool IsSingleLink() const;
 
+			[[nodiscard]] bool IsDual() const;
+
 			[[nodiscard]] Deltacast::Helpers::EQuadLinkType GetQuadLinkType() const;
 
 			[[nodiscard]] VHD_STREAMTYPE GetStreamType() const;

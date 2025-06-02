@@ -97,6 +97,12 @@ namespace Deltacast::Device
 				return false;
 			}
 
+			if (IsDual())
+			{
+				if (Base.bIsInput)
+					return false;
+			}
+
 			const auto IsFlexModule = DeltacastSdk.IsFlexModule(BoardHandle);
 			if (!IsFlexModule.has_value())
 			{
@@ -124,6 +130,11 @@ namespace Deltacast::Device
 		bool FSdiPortConfig::IsSingleLink() const
 		{
 			return Helpers::IsSingleLink(Interface);
+		}
+
+		bool FSdiPortConfig::IsDual() const
+		{
+			return Helpers::IsDual(Interface);
 		}
 
 		Deltacast::Helpers::EQuadLinkType FSdiPortConfig::GetQuadLinkType() const

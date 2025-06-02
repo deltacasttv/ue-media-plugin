@@ -18,6 +18,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <memory>
 
 
@@ -78,7 +79,7 @@ namespace Deltacast
 		template <typename FunctionPointer>
 		FunctionPointer DynamicLibraryLoaderBase::GetFunctionPointer(const wchar_t *FunctionName, DynamicLibraryStatus *Status) const
 		{
-			const auto FunctionNameSize      = wcslen(FunctionName);
+			const auto FunctionNameSize      = std::wcslen(FunctionName);
 			const auto ConvertedFunctionName = std::make_unique<char[]>(FunctionNameSize + 1);
 
 			std::memset(ConvertedFunctionName.get(), '\0', FunctionNameSize + 1);

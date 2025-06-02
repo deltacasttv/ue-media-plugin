@@ -41,6 +41,9 @@ public class DeltacastMediaOutput : ModuleRules
 			{
 				"Core",
 				"MediaIOCore",
+				"Renderer",
+				"RenderCore",
+            "RHI",
 				// ... add other public dependencies that you statically link with here ...
          }
 			);
@@ -52,6 +55,7 @@ public class DeltacastMediaOutput : ModuleRules
 				"CoreUObject",
 				"DeltacastMedia",
 				"Engine",
+				"Projects",
 				"Slate",
 				"SlateCore",
 				// ... add private dependencies that you statically link with here ...
