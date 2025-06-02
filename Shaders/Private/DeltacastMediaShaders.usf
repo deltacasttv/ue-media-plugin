@@ -1,0 +1,157 @@
+/*
+* SPDX-FileCopyrightText: Copyright (c) DELTACAST.TV. All rights reserved.
+* SPDX-License-Identifier: Apache-2.0
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at * * http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+#include "/Engine/Public/Platform.ush"
+
+half LinearToSrgbChannel(half lin)
+{
+    if (lin < 0.00313067)
+        return lin * 12.92;
+    return pow(lin, (1.0 / 2.4)) * 1.055 - 0.055;
+}
+
+half3 LinearToSrgb(half3 lin)
+{
+    return half3(
+		LinearToSrgbChannel(lin.r),
+		LinearToSrgbChannel(lin.g),
+		LinearToSrgbChannel(lin.b));
+}
+
+float3 RgbToYuv(float3 RGB, float4x4 ColorTransform, uint InLinearToSrgb)
+{
+    float3 TempRGB = RGB;
+    if (InLinearToSrgb == 1)
+    {
+        TempRGB = LinearToSrgb(RGB);
+    }
+
+	// Offset in last column of matrix, we can then use it directly 
+	// with 4x4 matrix multiplication with homogeneous rgb vector.
+    float3 YUV = mul(ColorTransform, float4(TempRGB, 1.0f)).xyz;
+
+    return float3(
+		clamp(YUV.x, 0.0f, 1.0f),
+		clamp(YUV.y, 0.0f, 1.0f),
+		clamp(YUV.z, 0.0f, 1.0f)
+);
+}
+
+uint AlphaToKey8(float Alpha)
+{
+    const uint Min = 16;
+    const uint Max = 235;
+    const uint Range = Max - Min;
+    return Min + Alpha * Range;
+}
+
+uint AlphaToKey10(float Alpha)
+{
+    const uint Min = 64;
+    const uint Max = 940;
+    const uint Range = Max - Min;
+    return Min + Alpha * Range;
+}
+
+Texture2D InputTexture;
+SamplerState InputSampler;
+float4x4 ColorTransform;
+uint DoLinearToSrgb;
+float OnePixelDeltaX;
+float PaddingScale;
+
+void RGBA8toYUVK8ConvertPS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0,
+	out uint OutColor : SV_Target0)
+{
+    float2 UV = UVAndScreenPos.xy;
+    float InputWidth = 0.0f, Height = 0.0f;
+    InputTexture.GetDimensions(InputWidth, Height);
+    const float ConvertionRatio = 0.75f;
+    const float OutputWidth = InputWidth * ConvertionRatio;
+    float2 PixelCoords = floor(UV * float2(OutputWidth, Height));
+    float PixelIndex = PixelCoords.x + (PixelCoords.y * OutputWidth);
+    
+    float Phase = uint(fmod(PixelIndex, 3.0f));
+    float BaseInputX = (PixelCoords.x - Phase) / InputWidth / ConvertionRatio;
+    float BaseInputY = UV.y;
+    
+    if (Phase < 0.5f)
+    {
+        // Convert 4px RGBA to 3x32bits YUVK 8bits: first word
+        float4 RGBA0 = InputTexture.Sample(InputSampler, float2(BaseInputX + 0.5f * OnePixelDeltaX, BaseInputY)).bgra;
+        
+        uint3 YUV0 = RgbToYuv(RGBA0.bgr, ColorTransform, DoLinearToSrgb) * 255;
+        
+        uint K0 = AlphaToKey8(RGBA0.a);
+    
+        uint W0 = (K0 << 24) | (YUV0.z << 16) | (YUV0.x << 8) | YUV0.y;
+	
+        OutColor.x = W0;
+    }
+    else if (Phase < 1.5f)
+    {
+        // Convert 4px RGBA to 3x32bits YUVK 8bits: second word
+        float4 RGBA1 = InputTexture.Sample(InputSampler, float2(BaseInputX + 1.5f * OnePixelDeltaX, BaseInputY)).bgra;
+        float4 RGBA2 = InputTexture.Sample(InputSampler, float2(BaseInputX + 2.5f * OnePixelDeltaX, BaseInputY)).bgra;
+
+        uint3 YUV1 = RgbToYuv(RGBA1.bgr, ColorTransform, DoLinearToSrgb) * 255;
+        uint3 YUV2 = RgbToYuv(RGBA2.bgr, ColorTransform, DoLinearToSrgb) * 255;
+    
+        uint K1 = AlphaToKey8(RGBA1.a);
+    
+        uint W1 = (YUV2.x << 24) | (YUV2.y << 16) | (K1 << 8) | YUV1.x;
+	
+        OutColor.x = W1;
+    }
+    else if (Phase < 2.5f)
+    {
+        // Convert 4px RGBA to 3x32bits YUVK 8bits: third word
+        float4 RGBA2 = InputTexture.Sample(InputSampler, float2(BaseInputX + 2.5f * OnePixelDeltaX, BaseInputY)).bgra;
+        float4 RGBA3 = InputTexture.Sample(InputSampler, float2(BaseInputX + 3.5f * OnePixelDeltaX, BaseInputY)).bgra;
+
+        uint3 YUV2 = RgbToYuv(RGBA2.bgr, ColorTransform, DoLinearToSrgb) * 255;
+        uint3 YUV3 = RgbToYuv(RGBA3.bgr, ColorTransform, DoLinearToSrgb) * 255;
+    
+        uint K2 = AlphaToKey8(RGBA2.a);
+        uint K3 = AlphaToKey8(RGBA3.a);
+        
+        uint W2 = (K3 << 24) | (YUV3.x << 16) | (K2 << 8) | YUV2.z;
+	
+        OutColor.x = W2;
+    }
+}
+
+void RGBA16toYUVK10ConvertPS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0,
+	out uint2 OutColor : SV_Target0)
+{
+    float2 UV = UVAndScreenPos.xy;
+    float X = (UV.x * PaddingScale) - OnePixelDeltaX * 2.5f;
+
+    float4 RGBA0 = InputTexture.Sample(InputSampler, float2(X, UV.y)).bgra;
+    float4 RGBA1 = InputTexture.Sample(InputSampler, float2(X + OnePixelDeltaX, UV.y)).bgra;
+    
+    uint3 YUV0 = RgbToYuv(RGBA0.bgr, ColorTransform, DoLinearToSrgb) * 1023;
+    uint3 YUV1 = RgbToYuv(RGBA1.bgr, ColorTransform, DoLinearToSrgb) * 1023;
+    
+    uint K0 = AlphaToKey10(RGBA0.a);
+    uint K1 = AlphaToKey10(RGBA1.a);
+    
+    uint W0 = (YUV0.z << 22) | (YUV0.x << 12) | (YUV0.y << 2);
+    uint W1 = (K1 << 22) | (YUV1.x << 12) | (K0 << 2);
+
+    OutColor.xy = uint2(W0, W1);
+}

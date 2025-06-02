@@ -182,8 +182,8 @@ bool FDeltacastMediaPlayer::Open(const FString &Url, const IMediaOptions *Option
 
 			Config.SdiPortConfig.VideoStandard = SdiVideoStandard;
 			Config.SdiPortConfig.Interface     = IsSingleLink
-				                                     ? Deltacast::Helpers::GetSingleLinkInterface(SdiVideoStandard)
-				                                     : Deltacast::Helpers::GetQuadLinkInterface(SdiVideoStandard, DcQuadLinkType);
+				                                     ? Deltacast::Helpers::GetSingleLinkInterface(SdiVideoStandard, false)
+				                                     : Deltacast::Helpers::GetQuadLinkInterface(SdiVideoStandard, DcQuadLinkType, false);
 		}
 
 		if (bIsDv)

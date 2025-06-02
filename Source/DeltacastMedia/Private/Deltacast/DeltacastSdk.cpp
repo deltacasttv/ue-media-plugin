@@ -18,6 +18,9 @@
 #include "DeltacastHelpers.h"
 #include "IDeltacastMediaModule.h"
 
+#include <map>
+#include <string_view>
+
 // Define this to true to enable the time logging macro on the SDK wrapper while in DEBUG
 #define DC_WRAPPER_LOG false
 
@@ -160,16 +163,6 @@ VHD_ERRORCODE FDeltacastSdk::CloseBoardHandle(const VHDHandle BoardHandle)
 }
 
 
-VHD_ERRORCODE FDeltacastSdk::GetBoardCapability(const VHDHandle BoardHandle, const VHD_CORE_BOARD_CAPABILITY BoardCapability, VHD::ULONG *Value) const
-{
-	WRAPPER_LOG_TIME();
-
-	if (Wrapper_GetBoardCapability != nullptr)
-		return static_cast<VHD_ERRORCODE>(Wrapper_GetBoardCapability(BoardHandle, BoardCapability, Value));
-
-	return FunctionNotLoaded;
-}
-
 VHD_ERRORCODE FDeltacastSdk::GetBoardCapSdiVideoStandard(const VHDHandle BoardHandle, const VHD_STREAMTYPE StreamType, const VHD_VIDEOSTANDARD VideoStandard, bool *IsCapable) const
 {
 	WRAPPER_LOG_TIME();
@@ -195,6 +188,22 @@ VHD_ERRORCODE FDeltacastSdk::GetBoardCapSdiInterface(const VHDHandle BoardHandle
 		auto IsCapableValue = Deltacast::Utils::Convert(*IsCapable);
 
 		const auto Result = static_cast<VHD_ERRORCODE>(Wrapper_GetBoardCapSDIInterface(BoardHandle, StreamType, Interface, &IsCapableValue));
+		Set(IsCapable, Deltacast::Utils::Convert(IsCapableValue));
+		return Result;
+	}
+
+	return FunctionNotLoaded;
+}
+
+VHD_ERRORCODE FDeltacastSdk::GetBoardCapBufferPacking(const VHDHandle BoardHandle, const VHD_BUFFERPACKING BufferPacking, bool *IsCapable) const
+{
+	WRAPPER_LOG_TIME();
+
+	if (Wrapper_GetBoardCapBufferPacking != nullptr)
+	{
+		auto IsCapableValue = Deltacast::Utils::Convert(*IsCapable);
+
+		const auto Result = static_cast<VHD_ERRORCODE>(Wrapper_GetBoardCapBufferPacking(BoardHandle, BufferPacking, &IsCapableValue));
 		Set(IsCapable, Deltacast::Utils::Convert(IsCapableValue));
 		return Result;
 	}
@@ -551,6 +560,23 @@ std::optional<bool> FDeltacastSdk::GetBoardCapSdiInterface(const VHDHandle     B
 	return IsCapable;
 }
 
+std::optional<bool> FDeltacastSdk::GetBoardCapBufferPacking(const VHDHandle BoardHandle, const VHD_BUFFERPACKING BufferPacking) const
+{
+	WRAPPER_LOG_TIME();
+
+	bool       IsCapable = false;
+	const auto Result    = GetBoardCapBufferPacking(BoardHandle, BufferPacking, &IsCapable);
+
+	if (!Deltacast::Helpers::IsValid(Result))
+	{
+		UE_LOG(LogDeltacastMedia, Error, TEXT("Failed to get Deltacast board buffer packing capabilites: %s"),
+		       *Deltacast::Helpers::GetErrorString(Result));
+		return {};
+	}
+
+	return IsCapable;
+}
+
 
 std::optional<bool> FDeltacastSdk::IsFlexModule(const VHDHandle BoardHandle) const
 {
@@ -603,6 +629,30 @@ std::optional<bool> FDeltacastSdk::IsFieldMergingSupported(const VHDHandle Board
 	return Value != VHD::False;
 }
 
+
+static const std::map<std::string_view, int> SingleLinkKeyOffsetByCard =
+{
+	{ "DELTA-12G-elp-h 2c", 4 },
+	{ "DELTA-12G2c-asi8c-elp-h", 4 },
+	{ "DELTA-12G-elp-h 04", 4 },
+	{ "DELTA-12G-elp-h 4c", 4 },
+	{ "DELTA-12G-elp 4c", 2 },
+	{ "DELTA-12G2c-hmi10-elp", 2 },
+	{ "DELTA-12G-e-h 2i1c", 2 },
+	{ "DELTA-12G-e-h 4i2c", 2 },
+	{ "DELTA-12G-e-h 4o2c", 2 },
+	{ "DELTA-12G-elp 2c", 1 },
+};
+
+int FDeltacastSdk::GetSingleLinkKeyOffset(VHD::ULONG BoardIndex) const
+{
+	const auto BoardName = GetBoardModel(BoardIndex);
+	const auto it = SingleLinkKeyOffsetByCard.find(std::string_view{ BoardName });
+	if (it == SingleLinkKeyOffsetByCard.cend())
+		return 1;
+
+	return it->second;
+}
 
 
 void FDeltacastSdk::SetLoopbackState(const VHDHandle BoardHandle, const VHD::ULONG PortIndex, const VHD::ULONG LinkCount, const int State)
@@ -659,7 +709,7 @@ Deltacast::DynamicLibrary::DynamicLibraryStatus FDeltacastSdk::LoadAllFunctionAd
         Wrapper_##FunctionName = GetFunctionPointer<VHD_##FunctionName>(L"VHD_" #FunctionName); \
 		if (Wrapper_##FunctionName == nullptr) \
 		{ \
-		    UE_LOG(LogDeltacastMedia, Error, TEXT("Failed to load: %s"), L"VHD_" #FunctionName); \
+		    UE_LOG(LogDeltacastMedia, Error, TEXT("Failed to load: %s"), TEXT("VHD_" #FunctionName)); \
 		    return Deltacast::DynamicLibrary::DynamicLibraryStatus::get_function_address_failed; \
 		} \
     }
@@ -676,6 +726,7 @@ Deltacast::DynamicLibrary::DynamicLibraryStatus FDeltacastSdk::LoadAllFunctionAd
 	LoadFunction(GetBoardCapability);
 	LoadFunction(GetBoardCapSDIVideoStandard);
 	LoadFunction(GetBoardCapSDIInterface);
+	LoadFunction(GetBoardCapBufferPacking);
 
 	LoadFunction(SetBoardProperty);
 
@@ -720,6 +771,18 @@ VHD_ERRORCODE FDeltacastSdk::OpenBoardHandle(const VHD::ULONG BoardIndex, VHDHan
 
 	return FunctionNotLoaded;
 }
+
+
+VHD_ERRORCODE FDeltacastSdk::GetBoardCapability(const VHDHandle BoardHandle, const VHD_CORE_BOARD_CAPABILITY BoardCapability, VHD::ULONG* Value) const
+{
+	WRAPPER_LOG_TIME();
+
+	if (Wrapper_GetBoardCapability != nullptr)
+		return static_cast<VHD_ERRORCODE>(Wrapper_GetBoardCapability(BoardHandle, BoardCapability, Value));
+
+	return FunctionNotLoaded;
+}
+
 
 VHD_ERRORCODE FDeltacastSdk::GetBoardProperty(const VHDHandle BoardHandle, const VHD::ULONG Property, VHD::ULONG* Value) const
 {

@@ -88,6 +88,7 @@ bool UDeltacastMediaOutput::Validate(FString& OutFailureReason) const
 	{
 		const auto VideoStandard = Deltacast::Helpers::GetSdiVideoStandardFromDeviceModeIdentifier(DeviceModeIdentifier);
 		const auto IsSingleLink = OutputConfiguration.MediaConfiguration.MediaConnection.TransportType == EMediaIOTransportType::SingleLink;
+		const auto IsDual = OutputConfiguration.KeyPortIdentifier > OutputConfiguration.MediaConfiguration.MediaConnection.PortIdentifier;
 		const auto QuadLinkType = [](const EMediaIOQuadLinkTransportType QuadTransportType)
 		{
 			switch (QuadTransportType)
@@ -107,9 +108,13 @@ bool UDeltacastMediaOutput::Validate(FString& OutFailureReason) const
 		PortConfig.Base = Base;
 
 		PortConfig.VideoStandard = VideoStandard;
-		PortConfig.Interface = IsSingleLink
-			? Deltacast::Helpers::GetSingleLinkInterface(VideoStandard)
-			: Deltacast::Helpers::GetQuadLinkInterface(VideoStandard, QuadLinkType);
+		PortConfig.Interface = [IsSingleLink, IsDual, VideoStandard, QuadLinkType]()
+			{
+				if (IsSingleLink)
+					return Deltacast::Helpers::GetSingleLinkInterface(VideoStandard, IsDual);
+				else
+					return Deltacast::Helpers::GetQuadLinkInterface(VideoStandard, QuadLinkType, IsDual);
+			}();
 
 		const auto BoardHandle = DeltacastSdk.OpenBoard(PortConfig.Base.BoardIndex).value_or(VHD::InvalidHandle);
 		if (!BoardHandle)
@@ -167,44 +172,30 @@ FIntPoint UDeltacastMediaOutput::GetRequestedSize() const
 
 EPixelFormat UDeltacastMediaOutput::GetRequestedPixelFormat() const
 {
-	EPixelFormat Result = EPixelFormat::PF_B8G8R8A8;
 	switch (PixelFormat)
 	{
-		case EDeltacastMediaOutputPixelFormat::PF_8BIT_RGBA:
-			Result = EPixelFormat::PF_B8G8R8A8;
-			break;
-		case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422:
-			Result = EPixelFormat::PF_B8G8R8A8;
-			break;
 		case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
-			Result = EPixelFormat::PF_A2B10G10R10;
-			break;
+			return OutputConfiguration.OutputType == EMediaIOOutputType::FillAndKey ? EPixelFormat::PF_A16B16G16R16 :EPixelFormat::PF_A2B10G10R10;
+		case EDeltacastMediaOutputPixelFormat::PF_8BIT_RGBA: [[fallthrough]];
+		case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422: [[fallthrough]];
 		default:
-			break;
+			return EPixelFormat::PF_B8G8R8A8;
 	}
-	return Result;
 }
 
 EMediaCaptureConversionOperation UDeltacastMediaOutput::GetConversionOperation(EMediaCaptureSourceType InSourceType) const
 {
-	EMediaCaptureConversionOperation Result = EMediaCaptureConversionOperation::NONE;
-
 	switch (PixelFormat)
 	{
-		case EDeltacastMediaOutputPixelFormat::PF_8BIT_RGBA:
-			Result = EMediaCaptureConversionOperation::NONE;
-			break;
-		case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422:
-			Result = EMediaCaptureConversionOperation::RGBA8_TO_YUV_8BIT;
-			break;
-		case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
-			Result = EMediaCaptureConversionOperation::RGB10_TO_YUVv210_10BIT;
-			break;
-		default:
-			break;
+	case EDeltacastMediaOutputPixelFormat::PF_8BIT_RGBA:
+		return EMediaCaptureConversionOperation::NONE;
+	case EDeltacastMediaOutputPixelFormat::PF_8BIT_YUV422:
+		return OutputConfiguration.OutputType == EMediaIOOutputType::FillAndKey ? EMediaCaptureConversionOperation::CUSTOM : EMediaCaptureConversionOperation::RGBA8_TO_YUV_8BIT;
+	case EDeltacastMediaOutputPixelFormat::PF_10BIT_YUV422:
+		return OutputConfiguration.OutputType == EMediaIOOutputType::FillAndKey ? EMediaCaptureConversionOperation::CUSTOM : EMediaCaptureConversionOperation::RGB10_TO_YUVv210_10BIT;
+	default:
+		return EMediaCaptureConversionOperation::NONE;
 	}
-
-	return Result;
 }
 
 
@@ -252,6 +243,12 @@ void UDeltacastMediaOutput::PostEditChangeChainProperty(FPropertyChangedChainEve
 			if (IsSdi && !IsPixelFormatSupportedSdi(PixelFormat))
 			{
 				PixelFormat = DefaultPixelFormatSdi;
+			}
+
+			if (OutputConfiguration.OutputType == EMediaIOOutputType::FillAndKey &&
+				 PixelFormat == EDeltacastMediaOutputPixelFormat::PF_8BIT_RGBA)
+			{
+				PixelFormat = DefaultPixelFormatFillAndKey;
 			}
 
 			DeltacastSdk.CloseBoardHandle(BoardHandle.value());

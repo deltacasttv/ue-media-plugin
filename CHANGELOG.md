@@ -1,5 +1,10 @@
 # Change log
 
+## [1.3.0]
+
+### Added
+- Fill & Key support [issue #13]
+
 ## [1.2.0]
 
 ### Added
