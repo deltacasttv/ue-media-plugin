@@ -3,7 +3,7 @@
 ## [1.3.0]
 
 ### Added
-- Fill & Key support [issue #13]
+- Fill & Key support [issue #13 & #14]
 
 ## [1.2.0]
 
