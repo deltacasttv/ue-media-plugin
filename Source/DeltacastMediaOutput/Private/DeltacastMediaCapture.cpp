@@ -17,8 +17,9 @@
 
 #include "DeltacastDefinition.h"
 #include "DeltacastHelpers.h"
-#include "DeltacastMediaShaders.h"
+#include "DeltacastMediaEncodeTime.h"
 #include "DeltacastMediaOutput.h"
+#include "DeltacastMediaShaders.h"
 #include "DeltacastSdk.h"
 #include "IDeltacastMediaModule.h"
 #include "IDeltacastMediaOutputModule.h"
@@ -215,6 +216,8 @@ void UDeltacastMediaCapture::OnFrameCaptured_RenderingThread(const FCaptureBaseD
 		uint32 Stride = Width * 4;
 		uint32 TimeEncodeWidth = Width;
 		EMediaIOCoreEncodePixelFormat EncodePixelFormat = EMediaIOCoreEncodePixelFormat::CharBGRA;
+		EDeltacastEncodePixelFormat CustomEncodePixelFormat = EDeltacastEncodePixelFormat::YUVK4224_8bits;
+		bool UseCustomEncode = false;
 		FString OutputFilename;
 
 		switch (BufferPacking)
@@ -240,13 +243,15 @@ void UDeltacastMediaCapture::OnFrameCaptured_RenderingThread(const FCaptureBaseD
 			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_8:
 				Stride = Width * 4;
 				TimeEncodeWidth = Width * 4;
-				EncodePixelFormat = EMediaIOCoreEncodePixelFormat::CharUYVY;
+				CustomEncodePixelFormat = EDeltacastEncodePixelFormat::YUVK4224_8bits;
+				UseCustomEncode = true;
 				OutputFilename = TEXT("Deltacast_Input_8_YUVK");
 				break;
 			case VHD_BUFFERPACKING::VHD_BUFPACK_VIDEO_YUVK4224_10:
 				Stride = Width * 8;
 				TimeEncodeWidth = Width * 2;
-				EncodePixelFormat = EMediaIOCoreEncodePixelFormat::YUVv210;
+				CustomEncodePixelFormat = EDeltacastEncodePixelFormat::YUVK4224_10bits;
+				UseCustomEncode = true;
 				OutputFilename = TEXT("Deltacast_Input_10_YUVK");
 				break;
 			default:
@@ -256,9 +261,18 @@ void UDeltacastMediaCapture::OnFrameCaptured_RenderingThread(const FCaptureBaseD
 		if (bEncodeTimecodeInTexel)
 		{
 			const auto AlignedStride = Align(Stride, 256);
-			const FMediaIOCoreEncodeTime EncodeTime(EncodePixelFormat, InBuffer, AlignedStride, TimeEncodeWidth, Height);
 			const auto& Timecode = InBaseData.SourceFrameTimecode;
-			EncodeTime.Render(Timecode.Hours, Timecode.Minutes, Timecode.Seconds, Timecode.Frames);
+
+			if (!UseCustomEncode)
+			{
+				const FMediaIOCoreEncodeTime EncodeTime(EncodePixelFormat, InBuffer, AlignedStride, TimeEncodeWidth, Height);
+				EncodeTime.Render(Timecode.Hours, Timecode.Minutes, Timecode.Seconds, Timecode.Frames);
+			}
+			else
+			{
+				const FDeltacastMediaEncodeTime EncodeTime(CustomEncodePixelFormat, InBuffer, AlignedStride, TimeEncodeWidth, Height);
+				EncodeTime.Render(Timecode.Hours, Timecode.Minutes, Timecode.Seconds, Timecode.Frames);
+			}
 		}
 
 		auto& DeltacastSdk = FDeltacast::GetSdk();
